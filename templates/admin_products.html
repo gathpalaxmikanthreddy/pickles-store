@@ -1,0 +1,718 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Manage Products - PICKELS STORE</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f7f4ed;
+            color: #333;
+        }
+
+        .navbar {
+            background: #7b2d26;
+            color: white;
+            padding: 18px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .navbar h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .navbar-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .navbar-links a {
+            color: white;
+            text-decoration: none;
+            background: rgba(255,255,255,0.15);
+            padding: 9px 14px;
+            border-radius: 7px;
+            font-size: 14px;
+        }
+
+        .navbar-links a:hover {
+            background: rgba(255,255,255,0.25);
+        }
+
+        .container {
+            width: 92%;
+            max-width: 1200px;
+            margin: 35px auto;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .page-header h2 {
+            margin: 0;
+            color: #7b2d26;
+            font-size: 30px;
+        }
+
+        .product-count {
+            background: #fff;
+            padding: 10px 16px;
+            border-radius: 10px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+            font-weight: bold;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            color: #7b2d26;
+            font-size: 22px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-weight: bold;
+            margin-bottom: 7px;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #7b2d26;
+        }
+
+        .add-button {
+            margin-top: 20px;
+            background: #15803d;
+            color: white;
+            border: none;
+            padding: 13px 22px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .add-button:hover {
+            background: #166534;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .product-card {
+            border: 1px solid #e5e5e5;
+            border-radius: 14px;
+            padding: 18px;
+            background: #fff;
+        }
+
+        .product-top {
+            display: flex;
+            gap: 18px;
+            align-items: flex-start;
+        }
+
+        .product-image {
+            width: 120px;
+            height: 120px;
+            flex-shrink: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f5efe0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .product-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .product-info h4 {
+            margin: 0 0 8px;
+            font-size: 20px;
+            color: #7b2d26;
+        }
+
+        .price {
+            font-size: 18px;
+            font-weight: bold;
+            color: #15803d;
+            margin-bottom: 6px;
+        }
+
+        .unit {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .filename {
+            font-size: 13px;
+            color: #777;
+            word-break: break-word;
+            margin-bottom: 8px;
+        }
+
+        .description {
+            color: #555;
+            line-height: 1.5;
+            margin-top: 10px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 10px;
+            margin-right: 5px;
+        }
+
+        .active {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .stock {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .stock-in {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .stock-out {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .stock-low {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .product-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            flex-wrap: wrap;
+        }
+
+        .edit-button,
+        .delete-button {
+            display: inline-block;
+            padding: 10px 17px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+        }
+
+        .edit-button {
+            background: #2563eb;
+            color: white;
+        }
+
+        .edit-button:hover {
+            background: #1d4ed8;
+        }
+
+        .delete-button {
+            background: #dc2626;
+            color: white;
+        }
+
+        .delete-button:hover {
+            background: #b91c1c;
+        }
+
+        .product-actions form {
+            margin: 0;
+        }
+
+        .security-note {
+            background: #fff7ed;
+            border-left: 5px solid #f97316;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 25px;
+            line-height: 1.5;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #777;
+        }
+
+        @media (max-width: 800px) {
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-group.full {
+                grid-column: auto;
+            }
+
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+        @media (max-width: 600px) {
+
+            .navbar {
+                justify-content: center;
+                text-align: center;
+            }
+
+            .container {
+                width: 94%;
+            }
+
+            .card {
+                padding: 18px;
+            }
+
+            .product-top {
+                flex-direction: column;
+            }
+
+            .product-image {
+                width: 140px;
+                height: 140px;
+            }
+
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <div class="navbar">
+
+        <h1>🌶️ PICKELS STORE</h1>
+
+        <div class="navbar-links">
+
+            <a href="/admin">
+                📊 Dashboard
+            </a>
+
+            <a href="/">
+                🏠 Store
+            </a>
+
+            <a href="/admin-logout">
+                🚪 Logout
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <div class="container">
+
+        <div class="page-header">
+
+            <h2>
+                📦 Manage Products
+            </h2>
+
+            <div class="product-count">
+                Total Products: {{ products|length }}
+            </div>
+
+        </div>
+
+
+        <!-- ADD PRODUCT -->
+
+        <div class="card">
+
+            <h3>
+                ➕ Add New Product
+            </h3>
+
+            <form
+                method="POST"
+                action="/admin/products/add"
+            >
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+
+                        <label>
+                            Product Name *
+                        </label>
+
+                        <input
+                            type="text"
+                            name="name"
+                            placeholder="Example: Mango Pickle"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            Price *
+                        </label>
+
+                        <input
+                            type="number"
+                            name="price"
+                            step="0.01"
+                            min="0"
+                            placeholder="Example: 299"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            Unit *
+                        </label>
+
+                        <input
+                            type="text"
+                            name="unit"
+                            placeholder="Example: 500g"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            Stock Quantity *
+                        </label>
+
+                        <input
+                            type="number"
+                            name="stock"
+                            min="0"
+                            value="0"
+                            placeholder="Example: 50"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            Image Filename *
+                        </label>
+
+                        <input
+                            type="text"
+                            name="image"
+                            placeholder="Example: mango-pickle.png"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group full">
+
+                        <label>
+                            Description
+                        </label>
+
+                        <textarea
+                            name="description"
+                            placeholder="Enter product description..."
+                        ></textarea>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="add-button"
+                >
+                    ➕ Add Product
+                </button>
+
+            </form>
+
+        </div>
+
+
+        <!-- PRODUCTS -->
+
+        <div class="card">
+
+            <h3>
+                🛍️ Current Products
+            </h3>
+
+
+            {% if products %}
+
+                <div class="products-grid">
+
+                    {% for product in products %}
+
+                        <div class="product-card">
+
+                            <div class="product-top">
+
+
+                                <div class="product-image">
+
+                                    <img
+                                        src="{{ url_for('static', filename='images/' + product.image) if product.image else url_for('static', filename='images/mango-pickle.png') }}"
+                                        alt="{{ product.name }}"
+                                    >
+
+                                </div>
+
+
+                                <div class="product-info">
+
+                                    <h4>
+                                        {{ product.name }}
+                                    </h4>
+
+                                    <div class="price">
+                                        ₹{{ "%.2f"|format(product.price) }}
+                                    </div>
+
+                                    <div class="unit">
+                                        {{ product.unit }}
+                                    </div>
+
+                                    <div class="filename">
+                                        🖼️ {{ product.image }}
+                                    </div>
+
+
+                                    <!-- STOCK INFORMATION -->
+
+                                    {% if product.stock > 0 %}
+
+                                        {% if product.stock <= 5 %}
+
+                                            <span class="stock stock-low">
+                                                ⚠️ LOW STOCK: {{ product.stock }}
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class="stock stock-in">
+                                                📦 IN STOCK: {{ product.stock }}
+                                            </span>
+
+                                        {% endif %}
+
+                                    {% else %}
+
+                                        <span class="stock stock-out">
+                                            ❌ OUT OF STOCK
+                                        </span>
+
+                                    {% endif %}
+
+
+                                    <!-- ACTIVE STATUS -->
+
+                                    {% if product.active %}
+
+                                        <span class="status active">
+                                            ACTIVE
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="status inactive">
+                                            INACTIVE
+                                        </span>
+
+                                    {% endif %}
+
+                                </div>
+
+                            </div>
+
+
+                            {% if product.description %}
+
+                                <div class="description">
+                                    {{ product.description }}
+                                </div>
+
+                            {% endif %}
+
+
+                            <!-- EDIT + DELETE -->
+
+                            <div class="product-actions">
+
+                                <a
+                                    href="{{ url_for('edit_product', product_id=product.id) }}"
+                                    class="edit-button"
+                                >
+                                    ✏️ Edit
+                                </a>
+
+
+                                <form
+                                    method="POST"
+                                    action="{{ url_for('delete_product', product_id=product.id) }}"
+                                    onsubmit="return confirm('Are you sure you want to delete this product?');"
+                                >
+
+                                    <button
+                                        type="submit"
+                                        class="delete-button"
+                                    >
+                                        🗑️ Delete
+                                    </button>
+
+                                </form>
+
+                            </div>
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+
+                <div class="empty">
+
+                    <h3>
+                        No products found
+                    </h3>
+
+                    <p>
+                        Add your first product using the form above.
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+
+        <div class="security-note">
+
+            <strong>🔐 Admin Security:</strong>
+
+            This page is available only to logged-in administrators.
+            Keep your admin credentials and API keys private.
+
+        </div>
+
+    </div>
+
+</body>
+</html>
+

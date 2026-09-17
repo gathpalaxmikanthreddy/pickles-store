@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>{{ product.name }} - PICKELS STORE</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: Arial, sans-serif;
+        background: #f8f5ef;
+        color: #2d241e;
+    }
+
+    .navbar {
+        background: #5a351b;
+        color: white;
+        padding: 16px 5%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .logo {
+        font-size: 24px;
+        font-weight: bold;
+    }
+
+    .navbar nav {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .navbar a {
+        color: white;
+        text-decoration: none;
+        font-size: 14px;
+    }
+
+    .navbar a:hover {
+        text-decoration: underline;
+    }
+
+    .container {
+        width: min(1100px, 92%);
+        margin: 50px auto;
+    }
+
+    .back-link {
+        display: inline-block;
+        margin-bottom: 25px;
+        color: #6b3f1d;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    .back-link:hover {
+        text-decoration: underline;
+    }
+
+    .product-details {
+        background: white;
+        border-radius: 18px;
+        padding: 35px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 45px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    .product-image-box {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #faf8f4;
+        border-radius: 15px;
+        padding: 30px;
+        min-height: 400px;
+    }
+
+    .product-image-box img {
+        width: 100%;
+        max-width: 430px;
+        max-height: 430px;
+        object-fit: contain;
+    }
+
+    .product-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .product-info h1 {
+        font-size: 38px;
+        color: #5a351b;
+        margin-bottom: 15px;
+    }
+
+    .description {
+        color: #666;
+        line-height: 1.7;
+        font-size: 17px;
+        margin: 15px 0 25px;
+    }
+
+    .price {
+        font-size: 32px;
+        font-weight: bold;
+        color: #6b3f1d;
+        margin-bottom: 8px;
+    }
+
+    .unit {
+        color: #777;
+        font-size: 15px;
+        margin-bottom: 15px;
+    }
+
+    .stock-status {
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+
+    .stock-available {
+        color: #15803d;
+    }
+
+    .stock-low {
+        color: #d97706;
+    }
+
+    .stock-out {
+        color: #dc2626;
+    }
+
+    .add-btn {
+        border: none;
+        background: #6b3f1d;
+        color: white;
+        padding: 15px 25px;
+        border-radius: 10px;
+        font-size: 17px;
+        font-weight: bold;
+        cursor: pointer;
+        width: fit-content;
+    }
+
+    .add-btn:hover {
+        background: #4d2c16;
+    }
+
+    .add-btn:disabled {
+        background: #999;
+        cursor: not-allowed;
+    }
+
+    .cart-link {
+        display: inline-block;
+        margin-top: 15px;
+        color: #6b3f1d;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    .cart-link:hover {
+        text-decoration: underline;
+    }
+
+    /* REVIEWS */
+
+    .reviews-section {
+        max-width: 1000px;
+        margin: 40px auto;
+        padding: 25px;
+    }
+
+    .reviews-section h2 {
+        margin-bottom: 25px;
+    }
+
+    .rating-summary {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 25px;
+    }
+
+    .average-rating {
+        text-align: center;
+    }
+
+    .rating-number {
+        font-size: 42px;
+        font-weight: bold;
+    }
+
+    .stars {
+        font-size: 25px;
+        margin: 8px 0;
+    }
+
+    .average-rating p {
+        color: #666;
+    }
+
+    .review-form {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+        margin-bottom: 30px;
+    }
+
+    .review-form h3 {
+        margin-top: 0;
+    }
+
+    .review-form label {
+        display: block;
+        margin-top: 15px;
+        margin-bottom: 7px;
+        font-weight: bold;
+    }
+
+    .review-form select,
+    .review-form textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 15px;
+    }
+
+    .review-form textarea {
+        resize: vertical;
+    }
+
+    .review-form button {
+        margin-top: 15px;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 8px;
+        background: #111827;
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .review-form button:hover {
+        opacity: 0.9;
+    }
+
+    .login-review {
+        background: #fff7ed;
+        padding: 18px;
+        border-radius: 10px;
+        margin-bottom: 25px;
+    }
+
+    .login-review a {
+        display: inline-block;
+        margin-top: 5px;
+        font-weight: bold;
+    }
+
+    .review-card {
+        background: white;
+        padding: 20px;
+        margin-bottom: 15px;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    }
+
+    .review-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .review-comment {
+        margin: 15px 0 10px;
+        line-height: 1.6;
+    }
+
+    .review-card small {
+        color: #777;
+    }
+
+    .no-reviews {
+        background: #f8fafc;
+        padding: 25px;
+        text-align: center;
+        border-radius: 10px;
+    }
+
+    .footer {
+        margin-top: 60px;
+        background: #2f2118;
+        color: white;
+        text-align: center;
+        padding: 25px;
+    }
+
+    @media (max-width: 768px) {
+
+        .navbar {
+            justify-content: center;
+            text-align: center;
+        }
+
+        .navbar a {
+            margin: 5px 7px;
+            display: inline-block;
+        }
+
+        .product-details {
+            grid-template-columns: 1fr;
+            padding: 20px;
+            gap: 25px;
+        }
+
+        .product-image-box {
+            min-height: 280px;
+            padding: 20px;
+        }
+
+        .product-info h1 {
+            font-size: 30px;
+        }
+
+        .price {
+            font-size: 28px;
+        }
+
+        .add-btn {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 600px) {
+
+        .reviews-section {
+            padding: 15px;
+            margin-top: 25px;
+        }
+
+        .rating-number {
+            font-size: 35px;
+        }
+
+        .review-header {
+            flex-direction: column;
+            gap: 8px;
+        }
+    }
+</style>
+
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+
+<header class="navbar">
+
+    <div class="logo">
+        🥭 PICKELS STORE
+    </div>
+
+    <nav>
+
+        <a href="/">Home</a>
+
+        <a href="/cart">🛒 Cart</a>
+
+        {% if session.get("user_mobile") %}
+
+            <a href="/account">My Account</a>
+
+            <a href="/order-history">Order History</a>
+
+            <a href="/track-order">Track Order</a>
+
+            <a href="/logout">Logout</a>
+
+        {% else %}
+
+            <a href="/login">Login</a>
+
+        {% endif %}
+
+    </nav>
+
+</header>
+
+
+<!-- PRODUCT -->
+
+<main class="container">
+
+    <a href="/" class="back-link">
+        ← Back to Products
+    </a>
+
+    <div class="product-details">
+
+        <!-- IMAGE -->
+
+        <div class="product-image-box">
+
+            <img
+                src="{{ url_for('static', filename='images/' + product.image) }}"
+                alt="{{ product.name }}"
+            >
+
+        </div>
+
+
+        <!-- INFORMATION -->
+
+        <div class="product-info">
+
+            <h1>
+                {{ product.name }}
+            </h1>
+
+
+            {% if product.description %}
+
+                <p class="description">
+                    {{ product.description }}
+                </p>
+
+            {% else %}
+
+                <p class="description">
+                    Delicious homemade pickle prepared
+                    with quality ingredients.
+                </p>
+
+            {% endif %}
+
+
+            <div class="price">
+                ₹{{ "%.2f"|format(product.price) }}
+            </div>
+
+
+            <div class="unit">
+                {{ product.unit }}
+            </div>
+
+
+            <!-- STOCK -->
+
+            {% if product.stock <= 0 %}
+
+                <p class="stock-status stock-out">
+                    ❌ Out of Stock
+                </p>
+
+            {% elif product.stock <= 5 %}
+
+                <p class="stock-status stock-low">
+                    ⚠️ Only {{ product.stock }} left
+                </p>
+
+            {% else %}
+
+                <p class="stock-status stock-available">
+                    📦 {{ product.stock }} available
+                </p>
+
+            {% endif %}
+
+
+            <button
+                type="button"
+                class="add-btn"
+                id="add-product"
+
+                data-name="{{ product.name }}"
+                data-price="{{ product.price }}"
+                data-image="{{ product.image }}"
+                data-stock="{{ product.stock }}"
+
+                {% if product.stock <= 0 %}
+                    disabled
+                {% endif %}
+            >
+
+                {% if product.stock <= 0 %}
+                    ❌ Out of Stock
+                {% else %}
+                    🛒 Add to Cart
+                {% endif %}
+
+            </button>
+
+
+            <a href="/cart" class="cart-link">
+                View Cart →
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <!-- REVIEWS & RATINGS -->
+
+    <div class="reviews-section">
+
+        <h2>
+            ⭐ Customer Reviews
+        </h2>
+
+
+        <div class="rating-summary">
+
+            <div class="average-rating">
+
+                <div class="rating-number">
+                    {{ "%.1f"|format(average_rating) }}
+                </div>
+
+
+                <div class="stars">
+
+                    {% for i in range(1, 6) %}
+
+                        {% if i <= average_rating|round(0, 'floor') %}
+                            ⭐
+                        {% else %}
+                            ☆
+                        {% endif %}
+
+                    {% endfor %}
+
+                </div>
+
+
+                <p>
+                    {{ review_count }}
+                    review{% if review_count != 1 %}s{% endif %}
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- WRITE REVIEW -->
+
+        {% if session.get("user_mobile") %}
+
+            <div class="review-form">
+
+                <h3>
+                    Write a Review
+                </h3>
+
+
+                <form
+                    method="POST"
+                    action="/product/{{ product.id }}/review"
+                >
+
+                    <label>
+                        Rating
+                    </label>
+
+                    <select
+                        name="rating"
+                        required
+                    >
+
+                        <option value="">
+                            Select rating
+                        </option>
+
+                        <option value="5">
+                            ⭐⭐⭐⭐⭐ 5 - Excellent
+                        </option>
+
+                        <option value="4">
+                            ⭐⭐⭐⭐ 4 - Very Good
+                        </option>
+
+                        <option value="3">
+                            ⭐⭐⭐ 3 - Good
+                        </option>
+
+                        <option value="2">
+                            ⭐⭐ 2 - Average
+                        </option>
+
+                        <option value="1">
+                            ⭐ 1 - Poor
+                        </option>
+
+                    </select>
+
+
+                    <label>
+                        Your Review
+                    </label>
+
+                    <textarea
+                        name="comment"
+                        rows="4"
+                        maxlength="1000"
+                        placeholder="Write your experience with this product..."
+                    ></textarea>
+
+
+                    <button type="submit">
+                        Submit Review
+                    </button>
+
+                </form>
+
+            </div>
+
+        {% else %}
+
+            <div class="login-review">
+
+                <p>
+                    🔐 Please login to write a review.
+                </p>
+
+                <a href="/login">
+                    Login
+                </a>
+
+            </div>
+
+        {% endif %}
+
+
+        <!-- EXISTING REVIEWS -->
+
+        <div class="reviews-list">
+
+            {% if reviews %}
+
+                {% for review in reviews %}
+
+                    <div class="review-card">
+
+                        <div class="review-header">
+
+                            <strong>
+                                {{ review.customer.name }}
+                            </strong>
+
+                            <span>
+
+                                {% for i in range(review.rating) %}
+                                    ⭐
+                                {% endfor %}
+
+                            </span>
+
+                        </div>
+
+
+                        {% if review.comment %}
+
+                            <p class="review-comment">
+                                {{ review.comment }}
+                            </p>
+
+                        {% endif %}
+
+
+                        <small>
+                            {{ review.created_at }}
+                        </small>
+
+                    </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="no-reviews">
+
+                    <p>
+                        No reviews yet.
+                        Be the first to review this product! ⭐
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</main>
+
+
+<!-- FOOTER -->
+
+<footer class="footer">
+
+    <p>
+        © 2026 PICKELS STORE. All rights reserved.
+    </p>
+
+</footer>
+
+
+<!-- CART JAVASCRIPT -->
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+
+<script>
+
+    const addButton =
+        document.getElementById("add-product");
+
+    if (addButton) {
+
+        addButton.addEventListener(
+            "click",
+            function () {
+
+                const name =
+                    addButton.getAttribute(
+                        "data-name"
+                    );
+
+                const price =
+                    addButton.getAttribute(
+                        "data-price"
+                    );
+
+                const image =
+                    addButton.getAttribute(
+                        "data-image"
+                    );
+
+                const stock =
+                    parseInt(
+                        addButton.getAttribute(
+                            "data-stock"
+                        )
+                    );
+
+
+                if (
+                    typeof addToCart === "function"
+                ) {
+
+                    addToCart(
+                        name,
+                        price,
+                        image,
+                        stock
+                    );
+
+                    addButton.innerText =
+                        "✅ Added to Cart";
+
+
+                    setTimeout(
+                        function () {
+
+                            addButton.innerText =
+                                "🛒 Add to Cart";
+
+                        },
+                        1500
+                    );
+
+                } else {
+
+                    alert(
+                        "Unable to add product to cart."
+                    );
+
+                }
+
+            }
+        );
+
+    }
+
+</script>
+
+</body>
+
+</html>

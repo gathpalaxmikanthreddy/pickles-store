@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - PICKELS STORE</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<header>
+    <h1>🥭 PICKELS STORE</h1>
+    <p>Secure Checkout</p>
+</header>
+
+<main class="checkout-page">
+
+<div class="checkout-container">
+
+    <!-- LEFT SIDE -->
+    <section class="checkout-details">
+
+        <h2>📦 Delivery Details</h2>
+
+        <p class="checkout-subtitle">
+            Check your details before placing the order.
+        </p>
+
+        <form id="checkout-form">
+
+            <!-- NAME -->
+            <div class="form-group">
+
+                <label for="name">
+                    Full Name
+                </label>
+
+                <input
+                    type="text"
+                    id="name"
+                    value="{{ session.get('user_name', '') }}"
+                    placeholder="Enter your full name"
+                    autocomplete="name"
+                    required
+                >
+
+            </div>
+
+            <!-- MOBILE -->
+            <div class="form-group">
+
+                <label for="mobile">
+                    Verified Mobile Number
+                </label>
+
+                <input
+                    type="tel"
+                    id="mobile"
+                    value="{{ session.get('user_mobile', '') }}"
+                    autocomplete="tel"
+                    readonly
+                    required
+                >
+
+                <small>
+                    This is the mobile number verified with OTP.
+                </small>
+
+            </div>
+
+            <!-- ADDRESS -->
+            <div class="form-group">
+
+                <label for="address">
+                    Delivery Address
+                </label>
+
+                <textarea
+                    id="address"
+                    placeholder="House / Flat No, Street, Area, City, State, PIN Code"
+                    rows="5"
+                    autocomplete="street-address"
+                    required
+                >{{ session.get('user_address', '') }}</textarea>
+
+                <small>
+                    You can change your delivery address here.
+                </small>
+
+            </div>
+
+            <!-- PAYMENT -->
+            <div class="payment-section">
+
+                <h2>💳 Payment Method</h2>
+
+                <label class="payment-option">
+
+                    <input
+                        type="radio"
+                        name="payment_method"
+                        value="cod"
+                        checked
+                    >
+
+                    <span>
+                        <strong>Cash on Delivery</strong>
+                        <small>Pay when your order arrives</small>
+                    </span>
+
+                </label>
+
+            </div>
+
+            <button
+                type="submit"
+                class="place-order-btn"
+            >
+                🛍️ Place Order
+            </button>
+
+        </form>
+
+    </section>
+
+    <!-- RIGHT SIDE -->
+    <section class="checkout-summary">
+
+        <h2>🛒 Order Summary</h2>
+
+        <div id="checkout-items">
+            <!-- Products are loaded by script.js -->
+        </div>
+
+        <div class="summary-total">
+
+            <span>Total Amount</span>
+
+            <strong id="checkout-total">
+                Total: ₹0
+            </strong>
+
+        </div>
+
+        <div class="secure-message">
+            🔒 Your order information is securely processed.
+        </div>
+
+    </section>
+
+</div>
+
+</main>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>

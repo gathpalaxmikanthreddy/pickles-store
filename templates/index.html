@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>PICKELS STORE</title>
+
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}"
+>
+
+<style>
+
+    /* =========================
+       PRODUCT SEARCH
+    ========================= */
+
+    .search-container {
+        width: min(650px, 92%);
+        margin: 0 auto 30px;
+        position: relative;
+    }
+
+    .search-box {
+        width: 100%;
+        padding: 15px 50px 15px 18px;
+        border: 1px solid #d8d0c2;
+        border-radius: 12px;
+        font-size: 16px;
+        outline: none;
+        background: white;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+        box-sizing: border-box;
+    }
+
+    .search-box:focus {
+        border-color: #6b3f1d;
+        box-shadow: 0 0 0 3px rgba(107, 63, 29, 0.08);
+    }
+
+    .search-icon {
+        position: absolute;
+        right: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 20px;
+        pointer-events: none;
+    }
+
+    .no-products {
+        display: none;
+        text-align: center;
+        padding: 30px;
+        color: #777;
+        background: white;
+        border-radius: 12px;
+        margin: 20px auto;
+        max-width: 600px;
+    }
+
+    /* =========================
+       PRODUCT CARD CLICK
+    ========================= */
+
+    .product-link {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    .product-link:hover {
+        color: inherit;
+    }
+
+    .product-image {
+        cursor: pointer;
+    }
+
+    .product-image img {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+
+    .product-info h3 {
+        cursor: pointer;
+    }
+
+    .product-info h3:hover {
+        text-decoration: underline;
+    }
+
+    /* =========================
+       STOCK DISPLAY
+    ========================= */
+
+    .stock-status {
+        margin: 8px 0;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .stock-available {
+        color: #285c41;
+    }
+
+    .stock-low {
+        color: #b45309;
+    }
+
+    .stock-out {
+        color: #b02a37;
+    }
+
+    /* =========================
+       DISABLED ADD BUTTON
+    ========================= */
+
+    .add-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        background: #999;
+    }
+
+</style>
+
+</head>
+
+<body>
+
+<!-- =========================
+     NAVBAR
+========================= -->
+
+<header class="navbar">
+
+    <div class="logo">
+        🥭 PICKELS STORE
+    </div>
+
+    <nav>
+
+        <a href="/">
+            Home
+        </a>
+
+        <a href="#products">
+            Products
+        </a>
+
+        <a href="#about">
+            About
+        </a>
+
+        <a href="#contact">
+            Contact
+        </a>
+
+        <a href="/login">
+            Login
+        </a>
+
+        <a href="/account">
+            👤 My Account
+        </a>
+
+        <a href="/logout">
+            Logout
+        </a>
+
+        <a href="/admin">
+            Admin
+        </a>
+
+        <a href="/track-order">
+            Track Order
+        </a>
+
+        <a href="/order-history">
+            Order History
+        </a>
+
+        <a href="/cart" class="cart-link">
+            🛒 Cart
+            <span id="cart-count">0</span>
+        </a>
+
+    </nav>
+
+</header>
+
+
+<!-- =========================
+     HERO
+========================= -->
+
+<section class="hero">
+
+    <div class="hero-content">
+
+        <h1>
+            Authentic Homemade Pickles
+        </h1>
+
+        <p>
+            Traditional taste, homemade quality,
+            delivered straight to your doorstep.
+        </p>
+
+        <a href="#products" class="btn-primary">
+            Shop Now
+        </a>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     PRODUCTS
+========================= -->
+
+<section
+    id="products"
+    class="products-section"
+>
+
+    <div class="section-heading">
+
+        <h2>
+            Our Pickles
+        </h2>
+
+        <p>
+            Freshly prepared with authentic ingredients
+        </p>
+
+    </div>
+
+
+    <!-- SEARCH -->
+
+    <div class="search-container">
+
+        <input
+            type="search"
+            id="product-search"
+            class="search-box"
+            placeholder="Search pickles..."
+            autocomplete="off"
+        >
+
+        <span class="search-icon">
+            🔍
+        </span>
+
+    </div>
+
+
+    <!-- PRODUCTS GRID -->
+
+    <div
+        class="products-grid"
+        id="products-grid"
+    >
+
+        {% for product in products %}
+
+        <div
+            class="product-card"
+            data-product-name="{{ product.name|lower }}"
+        >
+
+            <!-- PRODUCT IMAGE -->
+
+            <a
+                href="{{ url_for('product_details', product_id=product.id) }}"
+                class="product-link"
+            >
+
+                <div class="product-image">
+
+                    <img
+                        src="{{ url_for('static', filename='images/' + product.image) }}"
+                        alt="{{ product.name }}"
+                        loading="lazy"
+                    >
+
+                </div>
+
+            </a>
+
+
+            <!-- PRODUCT DETAILS -->
+
+            <div class="product-info">
+
+                <a
+                    href="{{ url_for('product_details', product_id=product.id) }}"
+                    class="product-link"
+                >
+
+                    <h3>
+                        {{ product.name }}
+                    </h3>
+
+                </a>
+
+
+                <p class="product-description">
+
+                    {% if product.description %}
+
+                        {{ product.description }}
+
+                    {% else %}
+
+                        Delicious homemade pickle prepared
+                        with authentic ingredients.
+
+                    {% endif %}
+
+                </p>
+
+
+                <div class="product-price">
+
+                    ₹{{ "%.2f"|format(product.price) }}
+
+                    <span>
+                        / {{ product.unit }}
+                    </span>
+
+                </div>
+
+
+                <!-- STOCK STATUS -->
+
+                {% if product.stock <= 0 %}
+
+                    <p class="stock-status stock-out">
+                        ❌ Out of Stock
+                    </p>
+
+                {% elif product.stock <= 5 %}
+
+                    <p class="stock-status stock-low">
+                        ⚠️ Only {{ product.stock }} left
+                    </p>
+
+                {% else %}
+
+                    <p class="stock-status stock-available">
+                        📦 {{ product.stock }} available
+                    </p>
+
+                {% endif %}
+
+
+                <!-- ADD TO CART -->
+
+                <button
+                    type="button"
+                    class="add-btn add-to-cart-button"
+                    data-name="{{ product.name }}"
+                    data-price="{{ product.price }}"
+                    data-image="{{ product.image }}"
+                    data-stock="{{ product.stock }}"
+
+                    {% if product.stock <= 0 %}
+                        disabled
+                    {% endif %}
+                >
+
+                    {% if product.stock <= 0 %}
+
+                        ❌ Out of Stock
+
+                    {% else %}
+
+                        🛒 Add
+
+                    {% endif %}
+
+                </button>
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+
+    <!-- NO SEARCH RESULTS -->
+
+    <div
+        id="no-products"
+        class="no-products"
+    >
+
+        <h3>
+            😕 No pickles found
+        </h3>
+
+        <p>
+            Try searching for another pickle.
+        </p>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     WHY CHOOSE US
+========================= -->
+
+<section class="why-section">
+
+    <div class="section-heading">
+
+        <h2>
+            Why Choose PICKELS STORE?
+        </h2>
+
+    </div>
+
+
+    <div class="why-grid">
+
+        <div class="why-card">
+
+            <div class="why-icon">
+                🏠
+            </div>
+
+            <h3>
+                Homemade
+            </h3>
+
+            <p>
+                Prepared with traditional homemade recipes.
+            </p>
+
+        </div>
+
+
+        <div class="why-card">
+
+            <div class="why-icon">
+                🌶️
+            </div>
+
+            <h3>
+                Fresh Ingredients
+            </h3>
+
+            <p>
+                Quality ingredients selected for every pickle.
+            </p>
+
+        </div>
+
+
+        <div class="why-card">
+
+            <div class="why-icon">
+                ❤️
+            </div>
+
+            <h3>
+                Made With Love
+            </h3>
+
+            <p>
+                Every jar is prepared with care and attention.
+            </p>
+
+        </div>
+
+
+        <div class="why-card">
+
+            <div class="why-icon">
+                🚚
+            </div>
+
+            <h3>
+                Doorstep Delivery
+            </h3>
+
+            <p>
+                Get your favourite pickles delivered to your home.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     ABOUT
+========================= -->
+
+<section
+    id="about"
+    class="about-section"
+>
+
+    <div class="section-heading">
+
+        <h2>
+            About PICKELS STORE
+        </h2>
+
+    </div>
+
+
+    <div class="about-content">
+
+        <p>
+            PICKELS STORE brings you delicious homemade pickles
+            prepared using traditional recipes and carefully
+            selected ingredients.
+        </p>
+
+        <p>
+            From spicy chilli pickle to tasty chicken, fish,
+            prawns, lemon, mango and garlic pickles, we aim to
+            bring authentic homemade flavour to every home.
+        </p>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     CONTACT
+========================= -->
+
+<section
+    id="contact"
+    class="contact-section"
+>
+
+    <div class="section-heading">
+
+        <h2>
+            Contact Us
+        </h2>
+
+        <p>
+            We would love to hear from you.
+        </p>
+
+    </div>
+
+
+    <div class="contact-content">
+
+        <div class="contact-card">
+
+            <div class="contact-icon">
+                📱
+            </div>
+
+            <h3>
+                Phone
+            </h3>
+
+            <p>
+                Contact us for orders and enquiries.
+            </p>
+
+        </div>
+
+
+        <div class="contact-card">
+
+            <div class="contact-icon">
+                📦
+            </div>
+
+            <h3>
+                Orders
+            </h3>
+
+            <p>
+                Place your order online and track it easily.
+            </p>
+
+        </div>
+
+
+        <div class="contact-card">
+
+            <div class="contact-icon">
+                💬
+            </div>
+
+            <h3>
+                Support
+            </h3>
+
+            <p>
+                Our team is here to help you.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     FOOTER
+========================= -->
+
+<footer>
+
+    <p>
+        © 2026 PICKELS STORE. All Rights Reserved.
+    </p>
+
+</footer>
+
+
+<!-- =========================
+     MAIN JAVASCRIPT
+========================= -->
+
+<script
+    src="{{ url_for('static', filename='script.js') }}"
+></script>
+
+
+<!-- =========================
+     PRODUCT SEARCH + CART
+========================= -->
+
+<script>
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        function() {
+
+            /* =========================
+               PRODUCT SEARCH
+            ========================= */
+
+            const searchInput =
+                document.getElementById(
+                    "product-search"
+                );
+
+            const productCards =
+                document.querySelectorAll(
+                    ".product-card"
+                );
+
+            const noProducts =
+                document.getElementById(
+                    "no-products"
+                );
+
+
+            if (searchInput) {
+
+                searchInput.addEventListener(
+                    "input",
+                    function() {
+
+                        const searchText =
+                            searchInput.value
+                                .trim()
+                                .toLowerCase();
+
+                        let visibleProducts = 0;
+
+
+                        productCards.forEach(
+                            function(card) {
+
+                                const productName =
+                                    card.getAttribute(
+                                        "data-product-name"
+                                    ) || "";
+
+
+                                if (
+                                    productName.includes(
+                                        searchText
+                                    )
+                                ) {
+
+                                    card.style.display = "";
+                                    visibleProducts++;
+
+                                } else {
+
+                                    card.style.display = "none";
+
+                                }
+
+                            }
+                        );
+
+
+                        if (
+                            visibleProducts === 0 &&
+                            searchText !== ""
+                        ) {
+
+                            noProducts.style.display = "block";
+
+                        } else {
+
+                            noProducts.style.display = "none";
+
+                        }
+
+                    }
+                );
+
+            }
+
+
+            /* =========================
+               ADD TO CART
+            ========================= */
+
+            const buttons =
+                document.querySelectorAll(
+                    ".add-to-cart-button"
+                );
+
+
+            buttons.forEach(
+                function(button) {
+
+                    button.addEventListener(
+                        "click",
+                        function(event) {
+
+                            event.preventDefault();
+
+
+                            /* Ignore disabled buttons */
+
+                            if (button.disabled) {
+                                return;
+                            }
+
+
+                            const name =
+                                button.getAttribute(
+                                    "data-name"
+                                );
+
+
+                            const price =
+                                Number(
+                                    button.getAttribute(
+                                        "data-price"
+                                    )
+                                );
+
+
+                            const image =
+                                button.getAttribute(
+                                    "data-image"
+                                );
+
+
+                            const stock =
+                                Number(
+                                    button.getAttribute(
+                                        "data-stock"
+                                    )
+                                );
+
+
+                            if (
+                                typeof addToCart ===
+                                "function"
+                            ) {
+
+                                addToCart(
+                                    name,
+                                    price,
+                                    image,
+                                    stock
+                                );
+
+                            } else {
+
+                                alert(
+                                    "Cart system is not loaded. Please restart the website."
+                                );
+
+                            }
+
+                        }
+                    );
+
+                }
+            );
+
+        }
+    );
+
+</script>
+
+</body>
+
+</html>

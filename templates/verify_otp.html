@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>PICKELS STORE - Verify OTP</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        .otp-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 20px;
+            background:
+                linear-gradient(
+                    135deg,
+                    #f5efe0,
+                    #fffaf2,
+                    #e9f0e6
+                );
+        }
+
+        .otp-wrapper {
+            width: 100%;
+            max-width: 430px;
+        }
+
+        .otp-brand {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .otp-brand .brand-icon {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+
+        .otp-brand h1 {
+            margin: 0;
+            color: #173d2b;
+            font-family: Georgia, serif;
+            font-size: 32px;
+        }
+
+        .otp-brand h1 span {
+            color: #c38d24;
+        }
+
+        .otp-brand p {
+            margin-top: 7px;
+            color: #737a74;
+            font-size: 14px;
+        }
+
+        .otp-card {
+            background: rgba(255, 255, 255, 0.97);
+            border-radius: 24px;
+            padding: 38px 35px;
+            text-align: center;
+            box-shadow:
+                0 20px 55px rgba(23, 61, 43, 0.14);
+            border: 1px solid rgba(23, 61, 43, 0.08);
+        }
+
+        .otp-icon {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            background: #edf3e9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+
+        .otp-card h2 {
+            margin: 0 0 8px;
+            color: #173d2b;
+            font-family: Georgia, serif;
+            font-size: 28px;
+        }
+
+        .otp-subtitle {
+            color: #737a74;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+
+        .otp-box {
+            width: 100%;
+            height: 58px;
+            padding: 10px;
+            border: 1px solid #dcded8;
+            border-radius: 12px;
+            background: #fbfcf9;
+            color: #173d2b;
+            text-align: center;
+            font-size: 25px;
+            font-weight: 700;
+            letter-spacing: 8px;
+            outline: none;
+            transition: 0.2s ease;
+        }
+
+        .otp-box:focus {
+            background: white;
+            border-color: #c38d24;
+            box-shadow:
+                0 0 0 3px rgba(195, 141, 36, 0.12);
+        }
+
+        .otp-box::placeholder {
+            color: #b8bdb8;
+            letter-spacing: 6px;
+        }
+
+        .otp-error {
+            background: #fff0f0;
+            color: #b42318;
+            border: 1px solid #f3c2c2;
+            padding: 12px 14px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .verify-button {
+            width: 100%;
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+            background: #173d2b;
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.25s ease;
+        }
+
+        .verify-button:hover {
+            background: #285c41;
+            transform: translateY(-2px);
+            box-shadow:
+                0 8px 20px rgba(23, 61, 43, 0.18);
+        }
+
+        .verify-button:active {
+            transform: scale(0.98);
+        }
+
+        .security-note {
+            margin-top: 22px;
+            color: #777;
+            font-size: 12px;
+        }
+
+        .back-login {
+            display: inline-block;
+            margin-top: 22px;
+            color: #173d2b;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .back-login:hover {
+            color: #c38d24;
+        }
+
+        @media (max-width: 500px) {
+
+            .otp-page {
+                padding: 25px 15px;
+            }
+
+            .otp-card {
+                padding: 30px 20px;
+                border-radius: 20px;
+            }
+
+            .otp-brand h1 {
+                font-size: 28px;
+            }
+
+            .otp-brand .brand-icon {
+                font-size: 42px;
+            }
+
+            .otp-card h2 {
+                font-size: 25px;
+            }
+
+            .otp-box {
+                font-size: 22px;
+                letter-spacing: 6px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="otp-page">
+
+    <div class="otp-wrapper">
+
+        <!-- BRAND -->
+        <div class="otp-brand">
+
+            <div class="brand-icon">🥭</div>
+
+            <h1>
+                PICKELS <span>STORE</span>
+            </h1>
+
+            <p>
+                Authentic taste, delivered to your doorstep.
+            </p>
+
+        </div>
+
+
+        <!-- OTP CARD -->
+        <div class="otp-card">
+
+            <div class="otp-icon">
+                🔐
+            </div>
+
+            <h2>Verify Your OTP</h2>
+
+            <p class="otp-subtitle">
+                Enter the 6-digit OTP sent to your mobile number.
+            </p>
+
+
+            {% if error %}
+                <div class="otp-error">
+                    ⚠️ {{ error }}
+                </div>
+            {% endif %}
+
+
+            <form method="POST">
+
+                <input
+                    class="otp-box"
+                    type="text"
+                    name="otp"
+                    placeholder="••••••"
+                    maxlength="6"
+                    inputmode="numeric"
+                    pattern="[0-9]{6}"
+                    autocomplete="one-time-code"
+                    required
+                    autofocus
+                >
+
+                <button
+                    type="submit"
+                    class="verify-button"
+                >
+                    ✓ Verify & Continue
+                </button>
+
+            </form>
+
+
+            <div class="security-note">
+                🔒 Your OTP is private. Never share it with anyone.
+            </div>
+
+        </div>
+
+
+        <div style="text-align: center;">
+            <a href="/login" class="back-login">
+                ← Back to Login
+            </a>
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Order History - PICKELS STORE</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+
+        .history-container {
+            max-width: 900px;
+            margin: 30px auto;
+        }
+
+        .order-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .order-header h3 {
+            margin: 0;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 7px 14px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-shipped {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .status-delivered {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .order-details {
+            background: #f8f9fa;
+            padding: 18px;
+            border-radius: 12px;
+            margin-top: 18px;
+        }
+
+        .order-details p {
+            margin: 9px 0;
+        }
+
+        .items-title {
+            margin-top: 25px;
+        }
+
+        .item-card {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            padding: 15px;
+            margin-top: 12px;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            background: #fff;
+        }
+
+        .item-card img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-info h4 {
+            margin: 0 0 8px;
+        }
+
+        .item-info p {
+            margin: 5px 0;
+        }
+
+        .total-box {
+            margin-top: 20px;
+            padding: 18px;
+            border-radius: 12px;
+            background: #f8f9fa;
+            text-align: right;
+        }
+
+        .total-box h3 {
+            margin: 0;
+        }
+
+        .track-button {
+            display: inline-block;
+            margin-top: 18px;
+            padding: 11px 20px;
+            border-radius: 8px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .track-button:hover {
+            opacity: 0.9;
+        }
+
+        .empty-orders {
+            text-align: center;
+            background: white;
+            padding: 40px 20px;
+            border-radius: 16px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .cancel-button {
+            display: inline-block;
+            margin-top: 18px;
+            margin-left: 8px;
+            padding: 11px 20px;
+            border: none;
+            border-radius: 8px;
+            background: #dc3545;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .cancel-button:hover {
+            opacity: 0.9;
+        }
+
+        @media (max-width: 600px) {
+
+            .history-container {
+                margin: 15px;
+            }
+
+            .order-card {
+                padding: 18px;
+            }
+
+            .item-card {
+                align-items: flex-start;
+            }
+
+            .item-card img {
+                width: 80px;
+                height: 80px;
+            }
+
+            .item-info {
+                font-size: 14px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <h1>🥭 PICKELS STORE</h1>
+
+    <p>My Order History</p>
+
+</header>
+
+
+<main class="checkout">
+
+    <div class="history-container">
+
+        <h2>📦 My Orders</h2>
+
+
+        {% if orders %}
+
+
+            {% for order in orders %}
+
+
+                <div class="order-card">
+
+
+                    <!-- ORDER HEADER -->
+
+                    <div class="order-header">
+
+                        <h3>
+                            🧾 Order #{{ order.id }}
+                        </h3>
+
+
+                        {% if order.status == "Pending" %}
+
+                            <span class="status-badge status-pending">
+                                ⏳ Pending
+                            </span>
+
+                        {% elif order.status == "Confirmed" %}
+
+                            <span class="status-badge status-confirmed">
+                                ✅ Confirmed
+                            </span>
+
+                        {% elif order.status == "Shipped" %}
+
+                            <span class="status-badge status-shipped">
+                                🚚 Shipped
+                            </span>
+
+                        {% elif order.status == "Delivered" %}
+
+                            <span class="status-badge status-delivered">
+                                🏠 Delivered
+                            </span>
+
+                        {% elif order.status == "Cancelled" %}
+
+                            <span class="status-badge status-cancelled">
+                                ❌ Cancelled
+                            </span>
+
+                        {% else %}
+                            <span class="status-badge">
+                                {{ order.status }}
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <!-- ORDER INFORMATION -->
+
+                    <div class="order-details">
+
+                        <p>
+
+                            📅 <strong>Date & Time:</strong>
+
+                            {% if order.created_at_ist %}
+
+                                {{ order.created_at_ist.strftime(
+                                    '%d-%m-%Y %I:%M %p'
+                                ) }}
+
+                            {% else %}
+
+                                Not available
+
+                            {% endif %}
+
+                        </p>
+
+
+                        <p>
+
+                            💳 <strong>Payment:</strong>
+
+                            {{ order.payment_method|upper }}
+
+                        </p>
+
+
+                        <p>
+
+                            📍 <strong>Delivery Address:</strong>
+
+                            {{ order.address }}
+
+                        </p>
+
+
+                    </div>
+
+
+                    <!-- ITEMS -->
+
+                    <h3 class="items-title">
+                        🛍️ Items Ordered
+                    </h3>
+
+
+                    {% if order.display_items %}
+
+
+                        {% for item in order.display_items %}
+
+
+                            {% set item_name = item.name|lower %}
+
+
+                            {% if "chilli" in item_name %}
+
+                                {% set image_file = "chilli-pickle.png" %}
+
+                            {% elif "lemon" in item_name %}
+
+                                {% set image_file = "lemon-pickle.png" %}
+
+                            {% elif "chicken" in item_name %}
+
+                                {% set image_file = "chicken-pickle.png" %}
+
+                            {% elif "fish" in item_name %}
+
+                                {% set image_file = "fish-pickle.png" %}
+
+                            {% elif "prawn" in item_name %}
+
+                                {% set image_file = "prawns-pickle.png" %}
+
+                            {% elif "garlic" in item_name %}
+
+                                {% set image_file = "garlic-pickle.png" %}
+
+                            {% else %}
+
+                                {% set image_file = "mango-pickle.png" %}
+
+                            {% endif %}
+
+
+                            <div class="item-card">
+
+
+                                <img
+                                    src="{{ url_for(
+                                        'static',
+                                        filename='images/' + image_file
+                                    ) }}"
+                                    alt="{{ item.name }}"
+                                >
+
+
+                                <div class="item-info">
+
+                                    <h4>
+                                        {{ item.name }}
+                                    </h4>
+
+
+                                    <p>
+                                        <strong>Price:</strong>
+                                        ₹{{ "%.2f"|format(item.price) }}
+                                    </p>
+
+
+                                    <p>
+                                        <strong>Quantity:</strong>
+                                        {{ item.quantity }}
+                                    </p>
+
+
+                                    <p>
+                                        <strong>Subtotal:</strong>
+                                        ₹{{
+                                            "%.2f"|format(
+                                                item.price * item.quantity
+                                            )
+                                        }}
+                                    </p>
+
+                                </div>
+
+
+                            </div>
+
+
+                        {% endfor %}
+
+
+                    {% else %}
+
+
+                        <p>
+                            Item details are unavailable.
+                        </p>
+
+
+                    {% endif %}
+
+
+                    <!-- TOTAL -->
+
+                    <div class="total-box">
+
+                        <h3>
+
+                            💰 Total:
+
+                            ₹{{ "%.2f"|format(order.total) }}
+
+                        </h3>
+
+                    </div>
+
+
+                    <!-- TRACK BUTTON -->
+
+                    {% if order.status != "Cancelled" %}
+
+                        <a
+                            href="/track-order"
+                            class="track-button"
+                        >
+                            🚚 Track This Order
+                        </a>
+
+                    {% endif %}
+
+                    {% if order.status == "Pending" %}
+
+                        <form
+                            method="POST"
+                            action="/cancel-order/{{ order.id }}"
+                            style="display: inline;"
+                            onsubmit="return confirm('Are you sure you want to cancel Order #{{ order.id }}?');"
+                        >
+                            <button
+                                type="submit"
+                                class="cancel-button"
+                            >
+                                ❌ Cancel Order
+                            </button>
+                        </form>
+
+                    {% endif %}
+
+
+                </div>
+
+
+            {% endfor %}
+
+
+        {% else %}
+
+
+            <div class="empty-orders">
+
+                <h2>📦 No Orders Yet</h2>
+
+                <p>
+                    You have not placed any orders yet.
+                </p>
+
+                <a
+                    href="/"
+                    class="track-button"
+                >
+                    🛍️ Start Shopping
+                </a>
+
+            </div>
+
+
+        {% endif %}
+
+
+    </div>
+
+</main>
+
+
+</body>
+
+</html>

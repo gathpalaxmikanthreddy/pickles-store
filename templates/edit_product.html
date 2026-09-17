@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>
+    Edit Product - PICKELS STORE
+</title>
+
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}"
+>
+
+<style>
+
+    .edit-product-page {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 20px;
+    }
+
+    .edit-box {
+        background: white;
+        padding: 30px;
+        border-radius: 18px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+    }
+
+    .edit-box h1 {
+        color: #173d2b;
+        font-family: Georgia, serif;
+        margin-top: 0;
+    }
+
+    .product-preview {
+        text-align: center;
+        margin-bottom: 25px;
+    }
+
+    .product-preview img {
+        width: 180px;
+        height: 180px;
+        object-fit: contain;
+        border-radius: 16px;
+        background: #f5f1df;
+        padding: 10px;
+    }
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-group label {
+        display: block;
+        font-weight: 700;
+        color: #173d2b;
+        margin-bottom: 7px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 13px;
+        border: 1px solid #ddd;
+        border-radius: 9px;
+        font-size: 15px;
+        font-family: inherit;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #173d2b;
+        box-shadow: 0 0 0 3px rgba(23,61,43,0.08);
+    }
+
+    .form-group textarea {
+        resize: vertical;
+    }
+
+    .active-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 20px 0;
+    }
+
+    .active-box input {
+        width: 18px;
+        height: 18px;
+        accent-color: #173d2b;
+    }
+
+    .active-box label {
+        color: #173d2b;
+        font-weight: 700;
+    }
+
+    .button-row {
+        display: flex;
+        gap: 12px;
+        margin-top: 25px;
+    }
+
+    .save-button {
+        flex: 1;
+        border: none;
+        background: #173d2b;
+        color: white;
+        padding: 14px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+    .save-button:hover {
+        background: #285c41;
+    }
+
+    .cancel-button {
+        flex: 1;
+        text-align: center;
+        text-decoration: none;
+        background: #eee;
+        color: #333;
+        padding: 14px;
+        border-radius: 10px;
+        font-weight: 700;
+        box-sizing: border-box;
+    }
+
+    .cancel-button:hover {
+        background: #ddd;
+    }
+
+    .error-message {
+        background: #fdeaea;
+        color: #b02a37;
+        padding: 12px;
+        border-radius: 9px;
+        margin-bottom: 20px;
+        font-weight: 600;
+    }
+
+    .help-text {
+        display: block;
+        color: #777;
+        font-size: 13px;
+        margin-top: 5px;
+    }
+
+    .stock-info {
+        background: #f5f8f5;
+        border-left: 4px solid #173d2b;
+        padding: 12px;
+        border-radius: 8px;
+        margin-top: 5px;
+        color: #555;
+        font-size: 13px;
+    }
+
+    @media (max-width: 600px) {
+
+        .edit-product-page {
+            margin: 20px auto;
+            padding: 12px;
+        }
+
+        .edit-box {
+            padding: 20px;
+        }
+
+        .product-preview img {
+            width: 140px;
+            height: 140px;
+        }
+
+        .button-row {
+            flex-direction: column;
+        }
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+<!-- HEADER -->
+
+<header class="navbar">
+
+<div class="logo">
+
+    <span class="logo-icon">
+        🥭
+    </span>
+
+    <span>
+        PICKELS <b>STORE</b>
+    </span>
+
+</div>
+
+</header>
+
+<!-- EDIT PRODUCT -->
+
+<main class="edit-product-page">
+
+<div class="edit-box">
+
+    <h1>
+        ✏️ Edit Product
+    </h1>
+
+
+    <!-- PRODUCT PREVIEW -->
+
+    <div class="product-preview">
+
+        <img
+            src="{{ url_for(
+                'static',
+                filename='images/' + product.image
+            ) }}"
+            alt="{{ product.name }}"
+            onerror="this.style.display='none';"
+        >
+
+    </div>
+
+
+    <!-- ERROR -->
+
+    {% if error %}
+
+        <div class="error-message">
+            {{ error }}
+        </div>
+
+    {% endif %}
+
+
+    <!-- EDIT FORM -->
+
+    <form
+        method="POST"
+        action="{{ url_for(
+            'edit_product',
+            product_id=product.id
+        ) }}"
+    >
+
+
+        <!-- NAME -->
+
+        <div class="form-group">
+
+            <label>
+                Product Name
+            </label>
+
+            <input
+                type="text"
+                name="name"
+                value="{{ product.name }}"
+                required
+            >
+
+        </div>
+
+
+        <!-- PRICE -->
+
+        <div class="form-group">
+
+            <label>
+                Price
+            </label>
+
+            <input
+                type="number"
+                name="price"
+                value="{{ product.price }}"
+                step="0.01"
+                min="0"
+                required
+            >
+
+        </div>
+
+
+        <!-- UNIT -->
+
+        <div class="form-group">
+
+            <label>
+                Unit
+            </label>
+
+            <input
+                type="text"
+                name="unit"
+                value="{{ product.unit }}"
+                required
+            >
+
+        </div>
+
+
+        <!-- STOCK -->
+
+        <div class="form-group">
+
+            <label>
+                Stock Quantity *
+            </label>
+
+            <input
+                type="number"
+                name="stock"
+                value="{{ product.stock }}"
+                min="0"
+                step="1"
+                required
+            >
+
+            <div class="stock-info">
+
+                📦 Current stock:
+                <strong>{{ product.stock }}</strong>
+
+                <br>
+
+                Enter <strong>0</strong> if the product is
+                completely out of stock.
+
+            </div>
+
+        </div>
+
+
+        <!-- IMAGE -->
+
+        <div class="form-group">
+
+            <label>
+                Image Filename
+            </label>
+
+            <input
+                type="text"
+                name="image"
+                value="{{ product.image }}"
+                required
+            >
+
+            <span class="help-text">
+                Enter the exact filename from
+                static/images/
+            </span>
+
+        </div>
+
+
+        <!-- DESCRIPTION -->
+
+        <div class="form-group">
+
+            <label>
+                Description
+            </label>
+
+            <textarea
+                name="description"
+                rows="5"
+            >{{ product.description or "" }}</textarea>
+
+        </div>
+
+
+        <!-- ACTIVE -->
+
+        <div class="active-box">
+
+            <input
+                type="checkbox"
+                name="active"
+                id="active"
+                {% if product.active %}
+                    checked
+                {% endif %}
+            >
+
+            <label for="active">
+                Product is Active
+            </label>
+
+        </div>
+
+
+        <!-- BUTTONS -->
+
+        <div class="button-row">
+
+            <button
+                type="submit"
+                class="save-button"
+            >
+                💾 Save Changes
+            </button>
+
+
+            <a
+                href="/admin/products"
+                class="cancel-button"
+            >
+                Cancel
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+</main>
+
+</body>
+
+</html>

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Track Order - PICKELS STORE</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        .tracking-card {
+            max-width: 750px;
+            margin: 30px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .order-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .order-info p {
+            margin: 10px 0;
+        }
+
+        .status-title {
+            text-align: center;
+            margin: 30px 0 20px;
+        }
+
+        .timeline {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            position: relative;
+            margin: 35px 10px;
+        }
+
+        .timeline::before {
+            content: "";
+            position: absolute;
+            top: 22px;
+            left: 8%;
+            right: 8%;
+            height: 4px;
+            background: #ddd;
+            z-index: 0;
+        }
+
+        .step {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            width: 25%;
+        }
+
+        .circle {
+            width: 44px;
+            height: 44px;
+            margin: 0 auto 10px;
+            border-radius: 50%;
+            background: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .step.completed .circle {
+            background: #28a745;
+            color: white;
+        }
+
+        .step.current .circle {
+            background: #007bff;
+            color: white;
+            box-shadow: 0 0 0 5px rgba(0, 123, 255, 0.15);
+        }
+
+        .step-label {
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 18px;
+            border-radius: 12px;
+            background: #f8f9fa;
+            margin-top: 25px;
+        }
+
+        .address-box {
+            background: #fff8e1;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 18px;
+            text-decoration: none;
+            border-radius: 8px;
+            background: #333;
+            color: white;
+        }
+
+        @media (max-width: 600px) {
+            .tracking-card {
+                margin: 15px;
+                padding: 18px;
+            }
+
+            .timeline {
+                margin-left: 0;
+                margin-right: 0;
+            }
+
+            .timeline::before {
+                left: 10%;
+                right: 10%;
+            }
+
+            .circle {
+                width: 38px;
+                height: 38px;
+                font-size: 17px;
+            }
+
+            .step-label {
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>🥭 PICKELS STORE</h1>
+    <p>Track Your Order</p>
+</header>
+
+<main class="checkout">
+
+    <div class="tracking-card">
+
+        <h2>📦 Track Order</h2>
+
+        {% if error %}
+            <p style="color: red;">
+                {{ error }}
+            </p>
+        {% endif %}
+
+        <form method="POST">
+
+            <label>Order ID</label>
+
+            <input
+                type="number"
+                name="order_id"
+                placeholder="Example: 1"
+                required
+            >
+
+            <label>Mobile Number</label>
+
+            <input
+                type="tel"
+                name="mobile"
+                value="{{ session.get('user_mobile', '') }}"
+                placeholder="Enter your mobile number"
+                maxlength="10"
+                required
+            >
+
+            <button type="submit">
+                🔍 Track Order
+            </button>
+
+        </form>
+
+
+        {% if order %}
+
+            <hr>
+
+            <h2>🧾 Order #{{ order.id }}</h2>
+
+            <div class="order-info">
+
+                <p>
+                    <strong>👤 Name:</strong>
+                    {{ order.name }}
+                </p>
+
+                <p>
+                    <strong>📱 Mobile:</strong>
+                    {{ order.mobile }}
+                </p>
+
+                <p>
+                    <strong>📅 Date & Time:</strong>
+
+                    {% if order.created_at_ist %}
+                        {{ order.created_at_ist.strftime('%d-%m-%Y %I:%M %p') }}
+                    {% else %}
+                        Not available
+                    {% endif %}
+                </p>
+
+                <p>
+                    <strong>💰 Total:</strong>
+                    ₹{{ "%.2f"|format(order.total) }}
+                </p>
+
+                <p>
+                    <strong>💳 Payment:</strong>
+                    {{ order.payment_method|upper }}
+                </p>
+
+                <div class="address-box">
+                    <strong>📍 Delivery Address:</strong>
+                    <br>
+                    {{ order.address }}
+                </div>
+
+            </div>
+
+
+            <!-- ORDER STATUS -->
+
+            <div class="status-title">
+
+                <h2>
+                    📦 {{ order.status }}
+                </h2>
+
+            </div>
+
+
+            <!-- TIMELINE -->
+
+            {% set statuses = ["Pending", "Confirmed", "Shipped", "Delivered"] %}
+            {% set current_index = statuses.index(order.status) if order.status in statuses else 0 %}
+
+            <div class="timeline">
+
+                {% for status in statuses %}
+
+                    <div class="step
+                        {% if loop.index0 < current_index %}
+                            completed
+                        {% elif loop.index0 == current_index %}
+                            current
+                        {% endif %}
+                    ">
+
+                        <div class="circle">
+
+                            {% if loop.index0 < current_index %}
+                                ✓
+                            {% elif status == "Pending" %}
+                                🕐
+                            {% elif status == "Confirmed" %}
+                                ✓
+                            {% elif status == "Shipped" %}
+                                🚚
+                            {% elif status == "Delivered" %}
+                                🏠
+                            {% endif %}
+
+                        </div>
+
+                        <div class="step-label">
+                            {{ status }}
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+
+            <!-- STATUS MESSAGE -->
+
+            <div class="status-message">
+
+                {% if order.status == "Pending" %}
+
+                    <h3>⏳ Order Received</h3>
+
+                    <p>
+                        Your order has been received and is waiting
+                        for confirmation.
+                    </p>
+
+                {% elif order.status == "Confirmed" %}
+
+                    <h3>✅ Order Confirmed</h3>
+
+                    <p>
+                        Your order has been confirmed and is being prepared.
+                    </p>
+
+                {% elif order.status == "Shipped" %}
+
+                    <h3>🚚 Order Shipped</h3>
+
+                    <p>
+                        Your order has been shipped and is on its way.
+                    </p>
+
+                {% elif order.status == "Delivered" %}
+
+                    <h3>🎉 Order Delivered</h3>
+
+                    <p>
+                        Your order has been successfully delivered.
+                    </p>
+
+                {% elif order.status == "Cancelled" %}
+
+                    <h3>❌ Order Cancelled</h3>
+
+                    <p>
+                        This order has been cancelled.
+                    </p>
+
+                {% endif %}
+
+            </div>
+
+        {% endif %}
+
+        <a href="/" class="back-button">
+            ← Back to Store
+        </a>
+
+    </div>
+
+</main>
+
+</body>
+</html>

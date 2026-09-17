@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>
+    Invoice #{{ order.id }} | PICKELS STORE
+</title>
+
+<style>
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        padding: 30px 15px;
+        background: #f5f5f5;
+        font-family:
+            Arial,
+            Helvetica,
+            sans-serif;
+        color: #222;
+    }
+
+    .invoice {
+        max-width: 800px;
+        margin: auto;
+        background: white;
+        padding: 40px;
+        border-radius: 12px;
+        box-shadow:
+            0 5px 25px
+            rgba(0, 0, 0, 0.08);
+    }
+
+    .invoice-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 25px;
+        margin-bottom: 25px;
+    }
+
+    .store-name {
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .store-name span {
+        color: #e67e22;
+    }
+
+    .invoice-title {
+        text-align: right;
+    }
+
+    .invoice-title h1 {
+        margin: 0;
+        font-size: 28px;
+    }
+
+    .invoice-title p {
+        margin: 5px 0;
+        color: #666;
+    }
+
+    .customer-section {
+        display: grid;
+        grid-template-columns:
+            1fr 1fr;
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+
+    .info-box {
+        background: #fafafa;
+        padding: 18px;
+        border-radius: 8px;
+    }
+
+    .info-box h3 {
+        margin-top: 0;
+        margin-bottom: 12px;
+    }
+
+    .info-box p {
+        margin: 7px 0;
+        line-height: 1.5;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    th {
+        background: #f3f3f3;
+        padding: 13px;
+        text-align: left;
+    }
+
+    td {
+        padding: 13px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .right {
+        text-align: right;
+    }
+
+    .total-row td {
+        font-size: 20px;
+        font-weight: bold;
+        border-bottom: none;
+        padding-top: 20px;
+    }
+
+    .status {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        background: #fff3cd;
+        color: #856404;
+        font-weight: bold;
+    }
+
+    .payment {
+        font-weight: bold;
+    }
+
+    .thank-you {
+        text-align: center;
+        margin-top: 35px;
+        padding-top: 25px;
+        border-top: 1px solid #eee;
+    }
+
+    .buttons {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 25px;
+    }
+
+    .buttons a,
+    .buttons button {
+        border: none;
+        text-decoration: none;
+        padding: 12px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 15px;
+    }
+
+    .home-btn {
+        background: #222;
+        color: white;
+    }
+
+    .print-btn {
+        background: #e67e22;
+        color: white;
+    }
+
+    @media (max-width: 600px) {
+
+        body {
+            padding: 10px;
+        }
+
+        .invoice {
+            padding: 20px;
+        }
+
+        .invoice-header {
+            flex-direction: column;
+        }
+
+        .invoice-title {
+            text-align: left;
+        }
+
+        .customer-section {
+            grid-template-columns: 1fr;
+        }
+
+        table {
+            font-size: 13px;
+        }
+
+        th,
+        td {
+            padding: 8px;
+        }
+
+        .buttons {
+            flex-direction: column;
+        }
+
+        .buttons a,
+        .buttons button {
+            width: 100%;
+        }
+    }
+
+    @media print {
+
+        body {
+            background: white;
+            padding: 0;
+        }
+
+        .invoice {
+            box-shadow: none;
+            max-width: 100%;
+        }
+
+        .buttons {
+            display: none;
+        }
+    }
+
+</style>
+
+</head>
+
+<body>
+
+<div class="invoice">
+
+<div class="invoice-header">
+
+    <div>
+
+        <div class="store-name">
+            🥭 PICKELS
+            <span>STORE</span>
+        </div>
+
+        <p>
+            Traditional Taste • Homemade Goodness
+        </p>
+
+    </div>
+
+    <div class="invoice-title">
+
+        <h1>INVOICE</h1>
+
+        <p>
+            Order #{{ order.id }}
+        </p>
+
+        {% if created_at_ist %}
+
+        <p>
+            {{ created_at_ist.strftime("%d-%m-%Y %I:%M %p") }}
+        </p>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<div class="customer-section">
+
+    <div class="info-box">
+
+        <h3>👤 Customer</h3>
+
+        <p>
+            <strong>Name:</strong>
+            {{ order.name }}
+        </p>
+
+        <p>
+            <strong>Mobile:</strong>
+            {{ order.mobile }}
+        </p>
+
+    </div>
+
+
+    <div class="info-box">
+
+        <h3>📦 Delivery</h3>
+
+        <p>
+            {{ order.address }}
+        </p>
+
+    </div>
+
+</div>
+
+
+<div class="info-box">
+
+    <p>
+        <strong>Payment:</strong>
+
+        <span class="payment">
+            {{ order.payment_method }}
+        </span>
+    </p>
+
+    <p>
+        <strong>Status:</strong>
+
+        <span class="status">
+            {{ order.status }}
+        </span>
+    </p>
+
+</div>
+
+
+<table>
+
+    <thead>
+
+        <tr>
+
+            <th>
+                Product
+            </th>
+
+            <th>
+                Price
+            </th>
+
+            <th>
+                Qty
+            </th>
+
+            <th class="right">
+                Subtotal
+            </th>
+
+        </tr>
+
+    </thead>
+
+    <tbody>
+
+        {% for item in items %}
+
+        <tr>
+
+            <td>
+                {{ item.name }}
+            </td>
+
+            <td>
+                ₹{{ "%.2f"|format(item.price) }}
+            </td>
+
+            <td>
+                {{ item.quantity }}
+            </td>
+
+            <td class="right">
+                ₹{{ "%.2f"|format(item.subtotal) }}
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+        <tr class="total-row">
+
+            <td colspan="3" class="right">
+                TOTAL
+            </td>
+
+            <td class="right">
+                ₹{{ "%.2f"|format(order.total) }}
+            </td>
+
+        </tr>
+
+    </tbody>
+
+</table>
+
+
+<div class="thank-you">
+
+    <h3>
+        ❤️ Thank you for shopping with PICKELS STORE!
+    </h3>
+
+    <p>
+        We hope you enjoy the traditional taste.
+    </p>
+
+</div>
+
+
+<div class="buttons">
+
+    <a
+        href="/"
+        class="home-btn"
+    >
+        🏠 Home
+    </a>
+
+    <button
+        type="button"
+        class="print-btn"
+        onclick="window.print()"
+    >
+        🖨️ Print Invoice
+    </button>
+
+</div>
+
+</div>
+
+</body>
+</html>

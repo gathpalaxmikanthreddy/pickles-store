@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>PICKELS STORE - Login</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        /* ================================
+           PROFESSIONAL OTP LOGIN
+        ================================= */
+
+        .login-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 20px;
+            background:
+                linear-gradient(
+                    135deg,
+                    #f5efe0,
+                    #fffaf2,
+                    #e9f0e6
+                );
+        }
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .login-brand {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .login-brand .brand-icon {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+
+        .login-brand h1 {
+            margin: 0;
+            color: #173d2b;
+            font-family: Georgia, serif;
+            font-size: 32px;
+        }
+
+        .login-brand h1 span {
+            color: #c38d24;
+        }
+
+        .login-brand p {
+            margin-top: 7px;
+            color: #737a74;
+            font-size: 14px;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.97);
+            border-radius: 24px;
+            padding: 35px;
+            box-shadow:
+                0 20px 55px rgba(23, 61, 43, 0.14);
+            border: 1px solid rgba(23, 61, 43, 0.08);
+        }
+
+        .login-card h2 {
+            margin: 0 0 8px;
+            color: #173d2b;
+            font-family: Georgia, serif;
+            font-size: 27px;
+            text-align: center;
+        }
+
+        .login-subtitle {
+            text-align: center;
+            color: #777;
+            font-size: 14px;
+            margin-bottom: 28px;
+        }
+
+        .login-error {
+            background: #fff0f0;
+            color: #b42318;
+            border: 1px solid #f3c2c2;
+            padding: 12px 14px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .login-field {
+            margin-bottom: 19px;
+        }
+
+        .login-field label {
+            display: block;
+            color: #24352b;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 7px;
+        }
+
+        .login-field input,
+        .login-field textarea {
+            width: 100%;
+            padding: 13px 14px;
+            border: 1px solid #dcded8;
+            border-radius: 11px;
+            background: #fbfcf9;
+            color: #24352b;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 15px;
+            outline: none;
+            transition: 0.2s ease;
+        }
+
+        .login-field input {
+            height: 48px;
+        }
+
+        .login-field textarea {
+            min-height: 95px;
+            resize: vertical;
+        }
+
+        .login-field input:focus,
+        .login-field textarea:focus {
+            background: white;
+            border-color: #c38d24;
+            box-shadow:
+                0 0 0 3px rgba(195, 141, 36, 0.12);
+        }
+
+        .mobile-hint {
+            margin-top: 6px;
+            color: #888;
+            font-size: 11px;
+        }
+
+        .otp-button {
+            width: 100%;
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            background: #173d2b;
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 5px;
+            transition: 0.25s ease;
+        }
+
+        .otp-button:hover {
+            background: #285c41;
+            transform: translateY(-2px);
+            box-shadow:
+                0 8px 20px rgba(23, 61, 43, 0.18);
+        }
+
+        .otp-button:active {
+            transform: scale(0.98);
+        }
+
+        .security-note {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            margin-top: 20px;
+            color: #777;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .back-home {
+            display: block;
+            text-align: center;
+            margin-top: 22px;
+            color: #173d2b;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .back-home:hover {
+            color: #c38d24;
+        }
+
+        @media (max-width: 500px) {
+
+            .login-page {
+                padding: 25px 15px;
+            }
+
+            .login-card {
+                padding: 25px 20px;
+                border-radius: 20px;
+            }
+
+            .login-brand h1 {
+                font-size: 28px;
+            }
+
+            .login-brand .brand-icon {
+                font-size: 42px;
+            }
+
+            .login-card h2 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="login-page">
+
+    <div class="login-wrapper">
+
+        <!-- BRAND -->
+        <div class="login-brand">
+            <div class="brand-icon">🥭</div>
+
+            <h1>
+                PICKELS <span>STORE</span>
+            </h1>
+
+            <p>Authentic taste, delivered to your doorstep.</p>
+        </div>
+
+
+        <!-- LOGIN CARD -->
+        <div class="login-card">
+
+            <h2>Welcome Back</h2>
+
+            <p class="login-subtitle">
+                Login securely using a one-time password
+            </p>
+
+
+            {% if error %}
+                <div class="login-error">
+                    ⚠️ {{ error }}
+                </div>
+            {% endif %}
+
+
+            <form method="POST">
+
+                <!-- NAME -->
+                <div class="login-field">
+
+                    <label for="name">
+                        👤 Full Name
+                    </label>
+
+                    <input
+                        id="name"
+                        type="text"
+                        name="name"
+                        placeholder="Enter your full name"
+                        autocomplete="name"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- ADDRESS -->
+                <div class="login-field">
+
+                    <label for="address">
+                        📍 Delivery Address
+                    </label>
+
+                    <textarea
+                        id="address"
+                        name="address"
+                        placeholder="Enter your complete delivery address"
+                        autocomplete="street-address"
+                        required
+                    ></textarea>
+
+                </div>
+
+
+                <!-- MOBILE -->
+                <div class="login-field">
+
+                    <label for="mobile">
+                        📱 Mobile Number
+                    </label>
+
+                    <input
+                        id="mobile"
+                        type="tel"
+                        name="mobile"
+                        placeholder="Enter 10-digit mobile number"
+                        maxlength="10"
+                        inputmode="numeric"
+                        autocomplete="tel"
+                        pattern="[0-9]{10}"
+                        required
+                    >
+
+                    <div class="mobile-hint">
+                        We'll send a 6-digit OTP to this number.
+                    </div>
+
+                </div>
+
+
+                <!-- BUTTON -->
+                <button
+                    type="submit"
+                    class="otp-button"
+                >
+                    🔐 Send OTP
+                </button>
+
+            </form>
+
+
+            <!-- SECURITY -->
+            <div class="security-note">
+                🔒 Your login is protected with OTP verification.
+            </div>
+
+        </div>
+
+
+        <!-- BACK HOME -->
+        <a href="/" class="back-home">
+            ← Back to PICKELS STORE
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Your Cart - PICKELS STORE</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+    <style>
+
+        .cart-page {
+
+            min-height: 100vh;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #f8f6f0,
+                    #fffdf8
+                );
+
+            padding: 45px 20px 80px;
+        }
+
+
+        .cart-wrapper {
+
+            max-width: 1100px;
+
+            margin: auto;
+        }
+
+
+        .cart-header {
+
+            text-align: center;
+
+            margin-bottom: 35px;
+        }
+
+
+        .cart-brand {
+
+            color: #173d2b;
+
+            font-family: Georgia, serif;
+
+            font-size: 30px;
+
+            margin-bottom: 5px;
+        }
+
+
+        .cart-brand span {
+
+            color: #c38d24;
+        }
+
+
+        .cart-header p {
+
+            color: #737a74;
+
+            font-size: 14px;
+        }
+
+
+        .cart-container {
+
+            background: white;
+
+            border-radius: 24px;
+
+            padding: 30px;
+
+            box-shadow:
+                0 15px 45px
+                rgba(23, 61, 43, 0.10);
+
+            border: 1px solid #e7e5dc;
+        }
+
+
+        .cart-title {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 15px;
+
+            padding-bottom: 20px;
+
+            border-bottom:
+                1px solid #eee;
+        }
+
+
+        .cart-title h1 {
+
+            margin: 0;
+
+            color: #173d2b;
+
+            font-family: Georgia, serif;
+
+            font-size: 28px;
+        }
+
+
+        .cart-title span {
+
+            color: #777;
+
+            font-size: 13px;
+        }
+
+
+        #cart-items {
+
+            margin-top: 10px;
+        }
+
+
+        .cart-item {
+
+            display: grid;
+
+            grid-template-columns:
+                150px 1fr;
+
+            gap: 25px;
+
+            align-items: center;
+
+            padding: 25px 5px;
+
+            border-bottom:
+                1px solid #eee;
+        }
+
+
+        .cart-product-image {
+
+            width: 150px;
+
+            height: 150px;
+
+            border-radius: 18px;
+
+            overflow: hidden;
+
+            background: #f5efe0;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            border:
+                1px solid #e8e3d5;
+        }
+
+
+        .cart-product-image img {
+
+            width: 100%;
+
+            height: 100%;
+
+            object-fit: contain;
+
+            display: block;
+        }
+
+
+        .cart-product-details h3 {
+
+            margin: 0 0 10px;
+
+            color: #173d2b;
+
+            font-family: Georgia, serif;
+
+            font-size: 22px;
+        }
+
+
+        .cart-product-details p {
+
+            color: #737a74;
+
+            margin: 7px 0;
+
+            font-size: 14px;
+        }
+
+
+        .cart-price {
+
+            font-weight: 600;
+        }
+
+
+        .quantity-row {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+
+            margin: 15px 0;
+        }
+
+
+        .quantity-row span {
+
+            color: #555;
+
+            font-size: 14px;
+
+            margin-right: 5px;
+        }
+
+
+        .quantity-row button {
+
+            width: 34px;
+
+            height: 34px;
+
+            border: none;
+
+            border-radius: 9px;
+
+            background: #edf3e9;
+
+            color: #173d2b;
+
+            font-size: 20px;
+
+            font-weight: 700;
+
+            cursor: pointer;
+
+            transition: 0.2s;
+        }
+
+
+        .quantity-row button:hover {
+
+            background: #dce8d8;
+
+            transform: translateY(-1px);
+        }
+
+
+        .quantity-row strong {
+
+            min-width: 30px;
+
+            text-align: center;
+
+            color: #173d2b;
+        }
+
+
+        .cart-subtotal {
+
+            font-size: 15px !important;
+        }
+
+
+        .cart-subtotal strong {
+
+            color: #173d2b;
+
+            font-size: 16px;
+        }
+
+
+        .remove-cart-btn {
+
+            border: none;
+
+            background: transparent;
+
+            color: #b42318;
+
+            padding: 5px 0;
+
+            font-size: 13px;
+
+            cursor: pointer;
+        }
+
+
+        .remove-cart-btn:hover {
+
+            text-decoration: underline;
+        }
+
+
+        #cart-total {
+
+            text-align: right;
+
+            color: #173d2b;
+
+            font-size: 25px;
+
+            font-weight: 800;
+
+            margin: 28px 0;
+        }
+
+
+        .cart-actions {
+
+            display: flex;
+
+            justify-content:
+                space-between;
+
+            align-items: center;
+
+            gap: 15px;
+
+            padding-top: 20px;
+
+            border-top:
+                1px solid #eee;
+        }
+
+
+        .continue-shopping {
+
+            color: #173d2b;
+
+            text-decoration: none;
+
+            font-weight: 600;
+
+            font-size: 14px;
+        }
+
+
+        .continue-shopping:hover {
+
+            color: #c38d24;
+        }
+
+
+        .checkout-btn {
+
+            border: none;
+
+            background: #173d2b;
+
+            color: white;
+
+            padding: 14px 25px;
+
+            border-radius: 12px;
+
+            font-size: 15px;
+
+            font-weight: 700;
+
+            cursor: pointer;
+
+            transition: 0.25s;
+        }
+
+
+        .checkout-btn:hover {
+
+            background: #285c41;
+
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 8px 20px
+                rgba(23, 61, 43, 0.18);
+        }
+
+
+        .cart-security {
+
+            margin-top: 25px;
+
+            padding: 14px;
+
+            border-radius: 12px;
+
+            background: #f5f9f5;
+
+            color: #667268;
+
+            text-align: center;
+
+            font-size: 12px;
+        }
+
+
+        .empty-cart {
+
+            text-align: center;
+
+            padding: 65px 20px;
+
+            color: #777;
+        }
+
+
+        .empty-cart-icon {
+
+            font-size: 55px;
+
+            margin-bottom: 15px;
+        }
+
+
+        .empty-cart h2 {
+
+            color: #173d2b;
+
+            font-family: Georgia, serif;
+
+            margin-bottom: 8px;
+        }
+
+
+        @media (max-width: 650px) {
+
+            .cart-page {
+
+                padding:
+                    30px 15px 60px;
+            }
+
+
+            .cart-container {
+
+                padding: 20px;
+
+                border-radius: 20px;
+            }
+
+
+            .cart-title {
+
+                flex-direction:
+                    column;
+
+                align-items:
+                    flex-start;
+            }
+
+
+            .cart-title h1 {
+
+                font-size: 24px;
+            }
+
+
+            .cart-item {
+
+                grid-template-columns:
+                    110px 1fr;
+
+                gap: 15px;
+            }
+
+
+            .cart-product-image {
+
+                width: 110px;
+
+                height: 110px;
+
+                border-radius: 14px;
+            }
+
+
+            .cart-product-details h3 {
+
+                font-size: 18px;
+            }
+
+
+            #cart-total {
+
+                text-align: left;
+
+                font-size: 22px;
+            }
+
+
+            .cart-actions {
+
+                flex-direction:
+                    column-reverse;
+
+                align-items:
+                    stretch;
+            }
+
+
+            .checkout-btn {
+
+                width: 100%;
+            }
+
+
+            .continue-shopping {
+
+                text-align: center;
+            }
+
+        }
+
+
+        @media (max-width: 420px) {
+
+            .cart-item {
+
+                grid-template-columns:
+                    1fr;
+            }
+
+
+            .cart-product-image {
+
+                width: 130px;
+
+                height: 130px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="cart-page">
+
+    <div class="cart-wrapper">
+
+
+        <div class="cart-header">
+
+            <div class="cart-brand">
+
+                🥭 PICKELS
+                <span>STORE</span>
+
+            </div>
+
+            <p>
+                Fresh homemade pickles,
+                delivered to your doorstep.
+            </p>
+
+        </div>
+
+
+        <div class="cart-container">
+
+
+            <div class="cart-title">
+
+                <h1>
+                    🛒 Your Shopping Cart
+                </h1>
+
+                <span>
+                    Review your items before checkout
+                </span>
+
+            </div>
+
+
+            <div id="cart-items"></div>
+
+
+            <div id="cart-total">
+                Total: ₹0.00
+            </div>
+
+
+            <div class="cart-actions">
+
+                <a
+                    href="/#products"
+                    class="continue-shopping"
+                >
+                    ← Continue Shopping
+                </a>
+
+
+                <button
+                    type="button"
+                    class="checkout-btn"
+                    onclick="checkout()"
+                >
+                    Proceed to Checkout →
+                </button>
+
+            </div>
+
+
+            <div class="cart-security">
+
+                🔒 Secure checkout
+                &nbsp; • &nbsp;
+                📱 OTP verified customer
+                &nbsp; • &nbsp;
+                🚚 Doorstep delivery
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script
+    src="{{ url_for('static', filename='script.js') }}"
+></script>
+
+</body>
+
+</html>

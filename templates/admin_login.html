@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Login - PICKELS STORE</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<header>
+
+    <h1>🥭 PICKELS STORE</h1>
+
+    <p>Admin Login</p>
+
+</header>
+
+
+<main class="checkout">
+
+    <h2>🔐 Admin Login</h2>
+
+    {% if error %}
+
+        <p style="color:red;">
+            {{ error }}
+        </p>
+
+    {% endif %}
+
+
+    <form method="POST">
+
+        <label>Username</label>
+
+        <input
+            type="text"
+            name="username"
+            placeholder="Admin username"
+            required
+        >
+
+
+        <label>Password</label>
+
+        <input
+            type="password"
+            name="password"
+            placeholder="Admin password"
+            required
+        >
+
+
+        <button type="submit">
+            Login
+        </button>
+
+    </form>
+
+</main>
+
+</body>
+
+</html>

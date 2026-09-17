@@ -1,0 +1,378 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Customer Details - PICKELS STORE</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            color: #222;
+        }
+
+        .topbar {
+            background: #111827;
+            color: white;
+            padding: 18px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .topbar h2 {
+            margin: 0;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            background: white;
+            color: #111827;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .customer-card {
+            background: white;
+            padding: 25px;
+            border-radius: 14px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+        }
+
+        .customer-card h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .customer-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+        }
+
+        .info-box {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .info-box span {
+            display: block;
+            color: #6b7280;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .info-box strong {
+            font-size: 16px;
+        }
+
+        .orders-card {
+            background: white;
+            padding: 25px;
+            border-radius: 14px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .orders-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .orders-header h3 {
+            margin: 0;
+        }
+
+        .spent {
+            background: #ecfdf5;
+            color: #047857;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 750px;
+        }
+
+        th,
+        td {
+            padding: 14px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            background: #f8fafc;
+            font-size: 14px;
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .pending {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
+        .confirmed {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .shipped {
+            background: #f5f3ff;
+            color: #6d28d9;
+        }
+
+        .delivered {
+            background: #ecfdf5;
+            color: #047857;
+        }
+
+        .cancelled {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .no-orders {
+            text-align: center;
+            padding: 35px;
+            color: #6b7280;
+        }
+
+        @media (max-width: 700px) {
+
+            .topbar {
+                padding: 15px;
+            }
+
+            .container {
+                margin: 20px auto;
+                padding: 0 12px;
+            }
+
+            .customer-card,
+            .orders-card {
+                padding: 18px;
+            }
+
+            .customer-info {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar h2 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="topbar">
+        <h2>👤 Customer Details</h2>
+
+        <a href="/admin/customers" class="back-btn">
+            ← Back to Customers
+        </a>
+    </div>
+
+    <div class="container">
+
+        <!-- CUSTOMER INFORMATION -->
+
+        <div class="customer-card">
+
+            <h3>Customer Information</h3>
+
+            <div class="customer-info">
+
+                <div class="info-box">
+                    <span>Customer ID</span>
+                    <strong>#{{ customer.id }}</strong>
+                </div>
+
+                <div class="info-box">
+                    <span>Name</span>
+                    <strong>{{ customer.name }}</strong>
+                </div>
+
+                <div class="info-box">
+                    <span>Mobile Number</span>
+                    <strong>{{ customer.mobile }}</strong>
+                </div>
+
+                <div class="info-box">
+                    <span>Address</span>
+                    <strong>
+                        {{ customer.address or "Not provided" }}
+                    </strong>
+                </div>
+
+                <div class="info-box">
+                    <span>Registration Date</span>
+                    <strong>
+                        {{ customer.created_at or "Not available" }}
+                    </strong>
+                </div>
+
+                <div class="info-box">
+                    <span>Total Orders</span>
+                    <strong>{{ orders|length }}</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ORDER HISTORY -->
+
+        <div class="orders-card">
+
+            <div class="orders-header">
+
+                <h3>📦 Order History</h3>
+
+                <div class="spent">
+                    Total Spent: ₹{{ "%.2f"|format(total_spent) }}
+                </div>
+
+            </div>
+
+
+            {% if orders %}
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Payment</th>
+                            <th>Status</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for order in orders %}
+
+                        <tr>
+
+                            <td>
+                                <strong>#{{ order.id }}</strong>
+                            </td>
+
+                            <td>
+                                {{ order.created_at or "—" }}
+                            </td>
+
+                            <td>
+                                {% set items = order.items|fromjson %}
+
+                                {% for item in items %}
+
+                                    {{ item.name }}
+
+                                    {% if item.quantity %}
+                                        × {{ item.quantity }}
+                                    {% endif %}
+
+                                    {% if not loop.last %}
+                                        <br>
+                                    {% endif %}
+
+                                {% endfor %}
+                            </td>
+
+                            <td>
+                                <strong>
+                                    ₹{{ "%.2f"|format(order.total) }}
+                                </strong>
+                            </td>
+
+                            <td>
+                                {{ order.payment_method or "COD" }}
+                            </td>
+
+                            <td>
+
+                                {% set status_class = order.status|lower %}
+
+                                <span class="status {{ status_class }}">
+                                    {{ order.status }}
+                                </span>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+            <div class="no-orders">
+                <h3>No Orders Yet</h3>
+                <p>This customer has not placed any orders.</p>
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</body>
+</html>
+
