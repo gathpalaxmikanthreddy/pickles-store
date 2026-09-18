@@ -5,8 +5,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Checkout - PICKELS STORE</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
@@ -16,9 +19,11 @@
     <p>Secure Checkout</p>
 </header>
 
+
 <main class="checkout-page">
 
 <div class="checkout-container">
+
 
     <!-- LEFT SIDE -->
     <section class="checkout-details">
@@ -29,7 +34,9 @@
             Check your details before placing the order.
         </p>
 
+
         <form id="checkout-form">
+
 
             <!-- NAME -->
             <div class="form-group">
@@ -48,6 +55,7 @@
                 >
 
             </div>
+
 
             <!-- MOBILE -->
             <div class="form-group">
@@ -71,6 +79,7 @@
 
             </div>
 
+
             <!-- ADDRESS -->
             <div class="form-group">
 
@@ -92,11 +101,14 @@
 
             </div>
 
+
             <!-- PAYMENT -->
             <div class="payment-section">
 
                 <h2>💳 Payment Method</h2>
 
+
+                <!-- COD -->
                 <label class="payment-option">
 
                     <input
@@ -107,14 +119,39 @@
                     >
 
                     <span>
-                        <strong>Cash on Delivery</strong>
-                        <small>Pay when your order arrives</small>
+                        <strong>💵 Cash on Delivery</strong>
+
+                        <small>
+                            Pay when your order arrives
+                        </small>
+                    </span>
+
+                </label>
+
+
+                <!-- ONLINE PAYMENT -->
+                <label class="payment-option">
+
+                    <input
+                        type="radio"
+                        name="payment_method"
+                        value="online"
+                    >
+
+                    <span>
+                        <strong>💳 Online Payment</strong>
+
+                        <small>
+                            Pay securely using UPI, Card or Net Banking
+                        </small>
                     </span>
 
                 </label>
 
             </div>
 
+
+            <!-- PLACE ORDER -->
             <button
                 type="submit"
                 class="place-order-btn"
@@ -122,18 +159,23 @@
                 🛍️ Place Order
             </button>
 
+
         </form>
 
     </section>
+
+
 
     <!-- RIGHT SIDE -->
     <section class="checkout-summary">
 
         <h2>🛒 Order Summary</h2>
 
+
         <div id="checkout-items">
             <!-- Products are loaded by script.js -->
         </div>
+
 
         <div class="summary-total">
 
@@ -145,17 +187,26 @@
 
         </div>
 
+
         <div class="secure-message">
-            🔒 Your order information is securely processed.
+            🔒 Your payment and order information are securely processed.
         </div>
 
     </section>
+
 
 </div>
 
 </main>
 
+
+<!-- RAZORPAY CHECKOUT -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+
+<!-- YOUR SCRIPT -->
 <script src="{{ url_for('static', filename='script.js') }}"></script>
+
 
 </body>
 </html>

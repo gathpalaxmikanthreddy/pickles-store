@@ -61,8 +61,7 @@ function addToCart(name, price, image, stock) {
 
         existingItem.quantity = currentQuantity + 1;
 
-        /* Update stock in case product
-           stock was changed */
+        /* Update stock in case product stock was changed */
         existingItem.stock = stock;
     }
 
@@ -258,10 +257,7 @@ function changeQuantity(index, amount) {
     const currentQuantity = Number(item.quantity) || 0;
     const stock = Number(item.stock);
 
-    /* =====================================
-       PREVENT EXCEEDING STOCK
-    ===================================== */
-
+    /* PREVENT EXCEEDING STOCK */
     if (amount > 0 && !isNaN(stock) && currentQuantity >= stock) {
         alert("Only " + stock + " unit(s) of " + item.name + " are available.");
         return;
@@ -269,10 +265,7 @@ function changeQuantity(index, amount) {
 
     item.quantity = currentQuantity + amount;
 
-    /* =====================================
-       REMOVE IF ZERO
-    ===================================== */
-
+    /* REMOVE IF ZERO */
     if (item.quantity <= 0) {
         cart.splice(index, 1);
     }
@@ -348,7 +341,7 @@ function displayCheckout() {
 }
 
 /* =========================================
-PLACE ORDER
+PLACE ORDER & PAYMENT HANDLING
 ========================================= */
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -368,83 +361,154 @@ document.addEventListener("DOMContentLoaded", function() {
             return;
         }
 
-        /* =====================================
-           GET CHECKOUT ADDRESS
-        ===================================== */
-
+        /* GET CHECKOUT ADDRESS */
         const addressElement = document.getElementById("address");
         const address = addressElement ? addressElement.value.trim() : "";
 
         if (!address) {
             alert("Please enter your delivery address.");
-
             if (addressElement) {
                 addressElement.focus();
             }
-
             return;
         }
 
-        /* =====================================
-           CALCULATE TOTAL
-        ===================================== */
-
+        /* CALCULATE TOTAL */
         const total = cart.reduce(function(sum, item) {
             return sum + (Number(item.price) * Number(item.quantity));
         }, 0);
 
-        /* =====================================
-           PAYMENT METHOD
-        ===================================== */
-
+        /* PAYMENT METHOD */
         const paymentElement = document.querySelector('input[name="payment_method"]:checked');
         const paymentMethod = paymentElement ? paymentElement.value : "COD";
 
-        /* =====================================
-           PLACE ORDER BUTTON
-        ===================================== */
-
+        /* PLACE ORDER BUTTON */
         const button = checkoutForm.querySelector("button[type='submit']");
 
         if (button) {
             button.disabled = true;
-            button.textContent = "Placing Order...";
+            button.textContent = "Processing Order...";
         }
 
         try {
-            const response = await fetch("/place-order", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    items: cart,
-                    total: total,
-                    payment_method: paymentMethod,
-                    address: address
-                })
-            });
+            /* CASE 1: CASH ON DELIVERY */
+            if (paymentMethod === "COD" || paymentMethod === "cod") {
+                const response = await fetch("/place-order", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        items: cart,
+                        total: total,
+                        payment_method: "COD",
+                        address: address
+                    })
+                });
 
-            const result = await response.json();
+                const result = await response.json();
 
-            if (result.success) {
-                alert("Order placed successfully! Order #" + result.order_id);
-
-                cart = [];
-                localStorage.removeItem("cart");
-                updateCartCount();
-                window.location.href = "/order-history";
-            } else {
-                alert(result.message || "Unable to place order.");
-
-                if (button) {
-                    button.disabled = false;
-                    button.textContent = "Place Order";
+                if (result.success) {
+                    alert("Order placed successfully! Order #" + result.order_id);
+                    cart = [];
+                    localStorage.removeItem("cart");
+                    updateCartCount();
+                    window.location.href = "/order-history";
+                } else {
+                    alert(result.message || "Unable to place order.");
+                    if (button) {
+                        button.disabled = false;
+                        button.textContent = "Place Order";
+                    }
                 }
+            } 
+            /* CASE 2: RAZORPAY / ONLINE PAYMENT */
+            else {
+                /* Step A: Create Razorpay Order on Backend */
+                const createOrderRes = await fetch("/create-razorpay-order", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        amount: total,
+                        items: cart,
+                        address: address
+                    })
+                });
+
+                const razorpayData = await createOrderRes.json();
+
+                if (!razorpayData.success) {
+                    alert(razorpayData.message || "Failed to initialize payment.");
+                    if (button) {
+                        button.disabled = false;
+                        button.textContent = "Place Order";
+                    }
+                    return;
+                }
+
+                /* Step B: Launch Razorpay Checkout Modal */
+                const options = {
+                    key: razorpayData.key_id,
+                    amount: razorpayData.amount,
+                    currency: "INR",
+                    name: "Pickles Store",
+                    description: "Order Payment",
+                    order_id: razorpayData.razorpay_order_id,
+                    handler: async function (response) {
+                        /* Step C: Verify Payment on Backend */
+                        const verifyRes = await fetch("/verify-payment", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_signature: response.razorpay_signature,
+                                items: cart,
+                                total: total,
+                                address: address,
+                                payment_method: "Online"
+                            })
+                        });
+
+                        const verifyResult = await verifyRes.json();
+
+                        if (verifyResult.success) {
+                            alert("Payment successful! Order #" + verifyResult.order_id);
+                            cart = [];
+                            localStorage.removeItem("cart");
+                            updateCartCount();
+                            window.location.href = "/order-history";
+                        } else {
+                            alert(verifyResult.message || "Payment verification failed.");
+                            if (button) {
+                                button.disabled = false;
+                                button.textContent = "Place Order";
+                            }
+                        }
+                    },
+                    modal: {
+                        ondismiss: function() {
+                            if (button) {
+                                button.disabled = false;
+                                button.textContent = "Place Order";
+                            }
+                        }
+                    },
+                    theme: {
+                        color: "#285c41"
+                    }
+                };
+
+                const rzp = new Razorpay(options);
+                rzp.open();
             }
         } catch (error) {
             console.error("Order error:", error);
-            alert("Unable to place order. Please try again.");
+            alert("Unable to process order. Please try again.");
 
             if (button) {
                 button.disabled = false;
