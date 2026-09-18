@@ -1,5 +1,6 @@
 ﻿let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
+
 /* =========================================
 UPDATE CART COUNT
 ========================================= */
@@ -18,6 +19,7 @@ function updateCartCount() {
     cartCount.textContent = total;
 }
 
+
 /* =========================================
 SAVE CART
 ========================================= */
@@ -26,6 +28,7 @@ function saveCart() {
     localStorage.setItem("cart", JSON.stringify(cart));
     updateCartCount();
 }
+
 
 /* =========================================
 ADD TO CART
@@ -38,37 +41,28 @@ function addToCart(name, price, image, stock) {
         return item.name === name;
     });
 
-    /* =====================================
-       CHECK STOCK
-    ===================================== */
-
     if (stock <= 0) {
         alert(name + " is currently out of stock.");
         return;
     }
 
-    /* =====================================
-       EXISTING ITEM
-    ===================================== */
-
     if (existingItem) {
         const currentQuantity = Number(existingItem.quantity) || 0;
 
         if (currentQuantity >= stock) {
-            alert("Only " + stock + " unit(s) of " + name + " are available.");
+            alert(
+                "Only " +
+                stock +
+                " unit(s) of " +
+                name +
+                " are available."
+            );
             return;
         }
 
         existingItem.quantity = currentQuantity + 1;
-
-        /* Update stock in case product stock was changed */
         existingItem.stock = stock;
-    }
-
-    /* =====================================
-       NEW ITEM
-    ===================================== */
-    else {
+    } else {
         cart.push({
             name: name,
             price: Number(price),
@@ -79,8 +73,10 @@ function addToCart(name, price, image, stock) {
     }
 
     saveCart();
+
     alert(name + " added to cart!");
 }
+
 
 /* =========================================
 DISPLAY CART
@@ -94,20 +90,23 @@ function displayCart() {
 
     cartItems.innerHTML = "";
 
-    /* EMPTY CART */
-
     if (cart.length === 0) {
+
         cartItems.innerHTML = `
             <div class="empty-cart">
+
                 <div class="empty-cart-icon">
                     🛒
                 </div>
+
                 <h2>
                     Your cart is empty
                 </h2>
+
                 <p>
                     Add some delicious pickles to get started.
                 </p>
+
             </div>
         `;
 
@@ -120,9 +119,8 @@ function displayCart() {
 
     let total = 0;
 
-    /* CART ITEMS */
-
     cart.forEach(function(item, index) {
+
         const price = Number(item.price) || 0;
         const quantity = Number(item.quantity) || 0;
         const stock = Number(item.stock);
@@ -132,23 +130,28 @@ function displayCart() {
 
         const image = item.image || "mango-pickle.png";
 
-        /* STOCK MESSAGE */
         let stockMessage = "";
 
         if (!isNaN(stock)) {
+
             if (stock <= 0) {
+
                 stockMessage = `
                     <p style="color:#b02a37;font-weight:700;">
                         ❌ Out of stock
                     </p>
                 `;
+
             } else if (stock <= 5) {
+
                 stockMessage = `
                     <p style="color:#b45309;font-weight:700;">
                         ⚠️ Only ${stock} left
                     </p>
                 `;
+
             } else {
+
                 stockMessage = `
                     <p style="color:#285c41;font-weight:600;">
                         📦 ${stock} available
@@ -157,10 +160,13 @@ function displayCart() {
             }
         }
 
+
         /* PLUS BUTTON */
+
         let plusButton = "";
 
         if (!isNaN(stock) && quantity >= stock) {
+
             plusButton = `
                 <button
                     type="button"
@@ -171,7 +177,9 @@ function displayCart() {
                     +
                 </button>
             `;
+
         } else {
+
             plusButton = `
                 <button
                     type="button"
@@ -182,31 +190,46 @@ function displayCart() {
             `;
         }
 
+
         cartItems.innerHTML += `
+
             <div class="cart-item">
+
                 <div class="cart-product-image">
+
                     <img
                         src="/static/images/${image}"
                         alt="${item.name}"
                     >
+
                 </div>
 
+
                 <div class="cart-product-details">
+
                     <h3>
                         ${item.name}
                     </h3>
 
+
                     <p class="cart-price">
+
                         Price:
+
                         ₹${price.toFixed(2)}
+
                     </p>
+
 
                     ${stockMessage}
 
+
                     <div class="quantity-row">
+
                         <span>
                             Quantity:
                         </span>
+
 
                         <button
                             type="button"
@@ -215,19 +238,27 @@ function displayCart() {
                             −
                         </button>
 
+
                         <strong>
                             ${quantity}
                         </strong>
 
+
                         ${plusButton}
+
                     </div>
 
+
                     <p class="cart-subtotal">
+
                         Subtotal:
+
                         <strong>
                             ₹${subtotal.toFixed(2)}
                         </strong>
+
                     </p>
+
 
                     <button
                         type="button"
@@ -236,284 +267,864 @@ function displayCart() {
                     >
                         🗑️ Remove
                     </button>
+
                 </div>
+
             </div>
+
         `;
     });
 
+
     if (cartTotal) {
-        cartTotal.textContent = "Total: ₹" + total.toFixed(2);
+
+        cartTotal.textContent =
+            "Total: ₹" +
+            total.toFixed(2);
+
     }
 }
+
 
 /* =========================================
 CHANGE QUANTITY
 ========================================= */
 
 function changeQuantity(index, amount) {
+
     if (!cart[index]) return;
 
     const item = cart[index];
-    const currentQuantity = Number(item.quantity) || 0;
-    const stock = Number(item.stock);
 
-    /* PREVENT EXCEEDING STOCK */
-    if (amount > 0 && !isNaN(stock) && currentQuantity >= stock) {
-        alert("Only " + stock + " unit(s) of " + item.name + " are available.");
+    const currentQuantity =
+        Number(item.quantity) || 0;
+
+    const stock =
+        Number(item.stock);
+
+
+    if (
+        amount > 0 &&
+        !isNaN(stock) &&
+        currentQuantity >= stock
+    ) {
+
+        alert(
+            "Only " +
+            stock +
+            " unit(s) of " +
+            item.name +
+            " are available."
+        );
+
         return;
     }
 
-    item.quantity = currentQuantity + amount;
 
-    /* REMOVE IF ZERO */
+    item.quantity =
+        currentQuantity + amount;
+
+
     if (item.quantity <= 0) {
+
         cart.splice(index, 1);
+
     }
 
+
     saveCart();
+
     displayCart();
 }
+
 
 /* =========================================
 REMOVE ITEM
 ========================================= */
 
 function removeFromCart(index) {
+
     if (!cart[index]) return;
 
     cart.splice(index, 1);
+
     saveCart();
+
     displayCart();
 }
+
 
 /* =========================================
 CHECKOUT
 ========================================= */
 
 function checkout() {
+
     if (cart.length === 0) {
+
         alert("Your cart is empty!");
+
         return;
     }
 
-    window.location.href = "/checkout";
+    window.location.href =
+        "/checkout";
 }
+
+
+/* =========================================
+CALCULATE CART TOTAL
+========================================= */
+
+function calculateCartTotal() {
+
+    return cart.reduce(
+        function(sum, item) {
+
+            const price =
+                Number(item.price) || 0;
+
+            const quantity =
+                Number(item.quantity) || 0;
+
+            return sum +
+                (price * quantity);
+
+        },
+        0
+    );
+}
+
 
 /* =========================================
 DISPLAY CHECKOUT
 ========================================= */
 
 function displayCheckout() {
-    const checkoutItems = document.getElementById("checkout-items");
-    const checkoutTotal = document.getElementById("checkout-total");
+
+    const checkoutItems =
+        document.getElementById(
+            "checkout-items"
+        );
+
+    const checkoutTotal =
+        document.getElementById(
+            "checkout-total"
+        );
+
 
     if (!checkoutItems) return;
 
+
     checkoutItems.innerHTML = "";
+
 
     let total = 0;
 
+
     cart.forEach(function(item) {
-        const price = Number(item.price) || 0;
-        const quantity = Number(item.quantity) || 0;
-        const subtotal = price * quantity;
+
+        const price =
+            Number(item.price) || 0;
+
+        const quantity =
+            Number(item.quantity) || 0;
+
+        const subtotal =
+            price * quantity;
+
 
         total += subtotal;
 
+
         checkoutItems.innerHTML += `
+
             <div class="checkout-item">
+
                 <p>
+
                     <strong>
                         ${item.name}
                     </strong>
+
                     × ${quantity}
+
                 </p>
+
+
                 <p>
+
                     ₹${subtotal.toFixed(2)}
+
                 </p>
+
             </div>
+
         `;
     });
 
+
     if (checkoutTotal) {
-        checkoutTotal.textContent = "Total: ₹" + total.toFixed(2);
+
+        checkoutTotal.textContent =
+            "Total: ₹" +
+            total.toFixed(2);
+
     }
 }
 
+
 /* =========================================
-PLACE ORDER & PAYMENT HANDLING
+RESET PLACE ORDER BUTTON
 ========================================= */
 
-document.addEventListener("DOMContentLoaded", function() {
-    updateCartCount();
-    displayCart();
-    displayCheckout();
+function resetPlaceOrderButton() {
 
-    const checkoutForm = document.getElementById("checkout-form");
+    const checkoutForm =
+        document.getElementById(
+            "checkout-form"
+        );
 
     if (!checkoutForm) return;
 
-    checkoutForm.addEventListener("submit", async function(event) {
-        event.preventDefault();
 
-        if (cart.length === 0) {
-            alert("Your cart is empty!");
-            return;
-        }
+    const button =
+        checkoutForm.querySelector(
+            "button[type='submit']"
+        );
 
-        /* GET CHECKOUT ADDRESS */
-        const addressElement = document.getElementById("address");
-        const address = addressElement ? addressElement.value.trim() : "";
 
-        if (!address) {
-            alert("Please enter your delivery address.");
-            if (addressElement) {
-                addressElement.focus();
-            }
-            return;
-        }
+    if (button) {
 
-        /* CALCULATE TOTAL */
-        const total = cart.reduce(function(sum, item) {
-            return sum + (Number(item.price) * Number(item.quantity));
-        }, 0);
+        button.disabled = false;
 
-        /* PAYMENT METHOD */
-        const paymentElement = document.querySelector('input[name="payment_method"]:checked');
-        const paymentMethod = paymentElement ? paymentElement.value : "COD";
+        button.textContent =
+            "Place Order";
+    }
+}
 
-        /* PLACE ORDER BUTTON */
-        const button = checkoutForm.querySelector("button[type='submit']");
 
-        if (button) {
-            button.disabled = true;
-            button.textContent = "Processing Order...";
-        }
+/* =========================================
+PLACE COD ORDER
+========================================= */
 
-        try {
-            /* CASE 1: CASH ON DELIVERY */
-            if (paymentMethod === "COD" || paymentMethod === "cod") {
-                const response = await fetch("/place-order", {
+async function placeCODOrder(
+    items,
+    address,
+    button
+) {
+
+    try {
+
+        const response =
+            await fetch(
+                "/place-order",
+                {
                     method: "POST",
+
                     headers: {
-                        "Content-Type": "application/json"
+                        "Content-Type":
+                            "application/json"
                     },
+
                     body: JSON.stringify({
-                        items: cart,
-                        total: total,
-                        payment_method: "COD",
+
+                        items: items,
+
+                        payment_method:
+                            "COD",
+
                         address: address
+
                     })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    alert("Order placed successfully! Order #" + result.order_id);
-                    cart = [];
-                    localStorage.removeItem("cart");
-                    updateCartCount();
-                    window.location.href = "/order-history";
-                } else {
-                    alert(result.message || "Unable to place order.");
-                    if (button) {
-                        button.disabled = false;
-                        button.textContent = "Place Order";
-                    }
                 }
-            } 
-            /* CASE 2: RAZORPAY / ONLINE PAYMENT */
-            else {
-                /* Step A: Create Razorpay Order on Backend */
-                const createOrderRes = await fetch("/create-razorpay-order", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        amount: total,
-                        items: cart,
-                        address: address
-                    })
-                });
+            );
 
-                const razorpayData = await createOrderRes.json();
 
-                if (!razorpayData.success) {
-                    alert(razorpayData.message || "Failed to initialize payment.");
-                    if (button) {
-                        button.disabled = false;
-                        button.textContent = "Place Order";
+        const result =
+            await response.json();
+
+
+        if (result.success) {
+
+            alert(
+                "Order placed successfully! Order #" +
+                result.order_id
+            );
+
+
+            cart = [];
+
+            localStorage.removeItem(
+                "cart"
+            );
+
+            updateCartCount();
+
+
+            window.location.href =
+                "/order-history";
+
+
+            return;
+        }
+
+
+        alert(
+            result.message ||
+            "Unable to place order."
+        );
+
+
+        resetPlaceOrderButton();
+
+    } catch (error) {
+
+        console.error(
+            "COD order error:",
+            error
+        );
+
+
+        alert(
+            "Unable to place order. Please try again."
+        );
+
+
+        resetPlaceOrderButton();
+    }
+}
+
+
+/* =========================================
+CREATE RAZORPAY ORDER
+========================================= */
+
+async function createRazorpayOrder(
+    items,
+    address
+) {
+
+    const response =
+        await fetch(
+            "/create-razorpay-order",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    items: items,
+
+                    address: address
+
+                })
+            }
+        );
+
+
+    const result =
+        await response.json();
+
+
+    if (!response.ok || !result.success) {
+
+        throw new Error(
+            result.message ||
+            "Unable to create Razorpay order."
+        );
+    }
+
+
+    return result;
+}
+
+
+/* =========================================
+VERIFY RAZORPAY PAYMENT
+========================================= */
+
+async function verifyRazorpayPayment(
+    paymentResponse,
+    items,
+    address
+) {
+
+    const response =
+        await fetch(
+            "/verify-razorpay-payment",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    razorpay_order_id:
+                        paymentResponse.razorpay_order_id,
+
+                    razorpay_payment_id:
+                        paymentResponse.razorpay_payment_id,
+
+                    razorpay_signature:
+                        paymentResponse.razorpay_signature,
+
+                    items: items,
+
+                    address: address
+
+                })
+            }
+        );
+
+
+    const result =
+        await response.json();
+
+
+    if (!response.ok || !result.success) {
+
+        throw new Error(
+            result.message ||
+            "Payment verification failed."
+        );
+    }
+
+
+    return result;
+}
+
+
+/* =========================================
+START RAZORPAY PAYMENT
+========================================= */
+
+async function startRazorpayPayment(
+    items,
+    address
+) {
+
+    try {
+
+        /* CHECK RAZORPAY SCRIPT */
+
+        if (
+            typeof Razorpay ===
+            "undefined"
+        ) {
+
+            throw new Error(
+                "Razorpay payment system is not loaded. Please refresh the page and try again."
+            );
+        }
+
+
+        /* CREATE RAZORPAY ORDER */
+
+        const razorpayOrder =
+            await createRazorpayOrder(
+                items,
+                address
+            );
+
+
+        if (
+            !razorpayOrder.key_id ||
+            !razorpayOrder.order_id
+        ) {
+
+            throw new Error(
+                "Razorpay order information is missing."
+            );
+        }
+
+
+        /* RAZORPAY OPTIONS */
+
+        const options = {
+
+            key:
+                razorpayOrder.key_id,
+
+            amount:
+                razorpayOrder.amount,
+
+            currency:
+                razorpayOrder.currency ||
+                "INR",
+
+            name:
+                "PICKELS STORE",
+
+            description:
+                "Pickles Store Order",
+
+            order_id:
+                razorpayOrder.order_id,
+
+
+            handler:
+                async function(
+                    paymentResponse
+                ) {
+
+                    try {
+
+                        const result =
+                            await verifyRazorpayPayment(
+                                paymentResponse,
+                                items,
+                                address
+                            );
+
+
+                        alert(
+                            "Payment successful and order placed! Order #" +
+                            result.order_id
+                        );
+
+
+                        cart = [];
+
+                        localStorage.removeItem(
+                            "cart"
+                        );
+
+                        updateCartCount();
+
+
+                        window.location.href =
+                            "/order-history";
+
+
+                    } catch (error) {
+
+                        console.error(
+                            "Payment verification error:",
+                            error
+                        );
+
+
+                        alert(
+                            error.message ||
+                            "Payment was completed, but order verification failed. Please contact PICKELS STORE."
+                        );
+
+
+                        resetPlaceOrderButton();
                     }
+                },
+
+
+            prefill: {
+
+                name:
+                    (
+                        document.getElementById(
+                            "name"
+                        )?.value || ""
+                    ).trim(),
+
+                contact:
+                    (
+                        document.getElementById(
+                            "mobile"
+                        )?.value || ""
+                    ).trim()
+
+            },
+
+
+            notes: {
+
+                address:
+                    address
+
+            },
+
+
+            theme: {
+
+                color:
+                    "#285c41"
+
+            },
+
+
+            modal: {
+
+                ondismiss:
+                    function() {
+
+                        resetPlaceOrderButton();
+
+                    }
+
+            }
+
+        };
+
+
+        /* CREATE RAZORPAY CHECKOUT */
+
+        const razorpay =
+            new Razorpay(options);
+
+
+        /* PAYMENT FAILED EVENT */
+
+        razorpay.on(
+            "payment.failed",
+            function(response) {
+
+                console.error(
+                    "Razorpay payment failed:",
+                    response
+                );
+
+
+                let message =
+                    "Payment failed. Please try again.";
+
+
+                if (
+                    response &&
+                    response.error &&
+                    response.error.description
+                ) {
+
+                    message =
+                        response.error.description;
+                }
+
+
+                alert(message);
+
+
+                resetPlaceOrderButton();
+            }
+        );
+
+
+        /* OPEN PAYMENT WINDOW */
+
+        razorpay.open();
+
+    } catch (error) {
+
+        console.error(
+            "Razorpay error:",
+            error
+        );
+
+
+        alert(
+            error.message ||
+            "Unable to start online payment."
+        );
+
+
+        resetPlaceOrderButton();
+    }
+}
+
+
+/* =========================================
+CHECKOUT FORM
+========================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+        updateCartCount();
+
+        displayCart();
+
+        displayCheckout();
+
+
+        const checkoutForm =
+            document.getElementById(
+                "checkout-form"
+            );
+
+
+        if (!checkoutForm) return;
+
+
+        checkoutForm.addEventListener(
+            "submit",
+            async function(event) {
+
+                event.preventDefault();
+
+
+                /* EMPTY CART */
+
+                if (cart.length === 0) {
+
+                    alert(
+                        "Your cart is empty!"
+                    );
+
                     return;
                 }
 
-                /* Step B: Launch Razorpay Checkout Modal */
-                const options = {
-                    key: razorpayData.key_id,
-                    amount: razorpayData.amount,
-                    currency: "INR",
-                    name: "Pickles Store",
-                    description: "Order Payment",
-                    order_id: razorpayData.razorpay_order_id,
-                    handler: async function (response) {
-                        /* Step C: Verify Payment on Backend */
-                        const verifyRes = await fetch("/verify-payment", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_order_id: response.razorpay_order_id,
-                                razorpay_signature: response.razorpay_signature,
-                                items: cart,
-                                total: total,
-                                address: address,
-                                payment_method: "Online"
-                            })
-                        });
 
-                        const verifyResult = await verifyRes.json();
+                /* ADDRESS */
 
-                        if (verifyResult.success) {
-                            alert("Payment successful! Order #" + verifyResult.order_id);
-                            cart = [];
-                            localStorage.removeItem("cart");
-                            updateCartCount();
-                            window.location.href = "/order-history";
-                        } else {
-                            alert(verifyResult.message || "Payment verification failed.");
-                            if (button) {
-                                button.disabled = false;
-                                button.textContent = "Place Order";
-                            }
-                        }
-                    },
-                    modal: {
-                        ondismiss: function() {
-                            if (button) {
-                                button.disabled = false;
-                                button.textContent = "Place Order";
-                            }
-                        }
-                    },
-                    theme: {
-                        color: "#285c41"
+                const addressElement =
+                    document.getElementById(
+                        "address"
+                    );
+
+
+                const address =
+                    addressElement
+                        ? addressElement.value.trim()
+                        : "";
+
+
+                if (!address) {
+
+                    alert(
+                        "Please enter your delivery address."
+                    );
+
+
+                    if (addressElement) {
+
+                        addressElement.focus();
+
                     }
-                };
 
-                const rzp = new Razorpay(options);
-                rzp.open();
-            }
-        } catch (error) {
-            console.error("Order error:", error);
-            alert("Unable to process order. Please try again.");
 
-            if (button) {
-                button.disabled = false;
-                button.textContent = "Place Order";
+                    return;
+                }
+
+
+                /* CART COPY */
+
+                const items =
+                    cart.map(function(item) {
+
+                        return {
+
+                            name:
+                                item.name,
+
+                            price:
+                                Number(item.price) || 0,
+
+                            quantity:
+                                Number(item.quantity) || 0,
+
+                            image:
+                                item.image || "",
+
+                            stock:
+                                Number(item.stock)
+
+                        };
+
+                    });
+
+
+                /* PAYMENT METHOD */
+
+                const paymentElement =
+                    document.querySelector(
+                        'input[name="payment_method"]:checked'
+                    );
+
+
+                if (!paymentElement) {
+
+                    alert(
+                        "Please select a payment method."
+                    );
+
+                    return;
+                }
+
+
+                const paymentMethod =
+                    paymentElement.value
+                        .toLowerCase()
+                        .trim();
+
+
+                /* BUTTON */
+
+                const button =
+                    checkoutForm.querySelector(
+                        "button[type='submit']"
+                    );
+
+
+                if (button) {
+
+                    button.disabled = true;
+
+                    button.textContent =
+                        "Placing Order...";
+                }
+
+
+                /* =================================
+                   CASH ON DELIVERY
+                ================================= */
+
+                if (
+                    paymentMethod ===
+                    "cod"
+                ) {
+
+                    await placeCODOrder(
+                        items,
+                        address,
+                        button
+                    );
+
+                    return;
+                }
+
+
+                /* =================================
+                   ONLINE PAYMENT
+                ================================= */
+
+                if (
+                    paymentMethod ===
+                    "online"
+                ) {
+
+                    await startRazorpayPayment(
+                        items,
+                        address
+                    );
+
+                    return;
+                }
+
+
+                /* INVALID METHOD */
+
+                alert(
+                    "Please select a valid payment method."
+                );
+
+
+                resetPlaceOrderButton();
             }
-        }
-    });
-});
+        );
+    }
+);
