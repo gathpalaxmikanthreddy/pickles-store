@@ -268,6 +268,7 @@
                             </span>
 
                         {% else %}
+
                             <span class="status-badge">
                                 {{ order.status }}
                             </span>
@@ -334,50 +335,36 @@
                         {% for item in order.display_items %}
 
 
-                            {% set item_name = item.name|lower %}
-
-
-                            {% if "chilli" in item_name %}
-
-                                {% set image_file = "chilli-pickle.png" %}
-
-                            {% elif "lemon" in item_name %}
-
-                                {% set image_file = "lemon-pickle.png" %}
-
-                            {% elif "chicken" in item_name %}
-
-                                {% set image_file = "chicken-pickle.png" %}
-
-                            {% elif "fish" in item_name %}
-
-                                {% set image_file = "fish-pickle.png" %}
-
-                            {% elif "prawn" in item_name %}
-
-                                {% set image_file = "prawns-pickle.png" %}
-
-                            {% elif "garlic" in item_name %}
-
-                                {% set image_file = "garlic-pickle.png" %}
-
-                            {% else %}
-
-                                {% set image_file = "mango-pickle.png" %}
-
-                            {% endif %}
-
-
                             <div class="item-card">
 
 
-                                <img
-                                    src="{{ url_for(
-                                        'static',
-                                        filename='images/' + image_file
-                                    ) }}"
-                                    alt="{{ item.name }}"
-                                >
+                                <!--
+                                    USE THE ACTUAL IMAGE STORED
+                                    WITH THE ORDER ITEM.
+                                -->
+
+                                {% if item.image %}
+
+                                    <img
+                                        src="{{ url_for(
+                                            'static',
+                                            filename='images/' + item.image
+                                        ) }}"
+                                        alt="{{ item.name }}"
+                                        onerror="this.style.display='none';"
+                                    >
+
+                                {% else %}
+
+                                    <img
+                                        src="{{ url_for(
+                                            'static',
+                                            filename='images/mango-pickle.png'
+                                        ) }}"
+                                        alt="{{ item.name }}"
+                                    >
+
+                                {% endif %}
 
 
                                 <div class="item-info">
@@ -388,24 +375,33 @@
 
 
                                     <p>
+
                                         <strong>Price:</strong>
+
                                         ₹{{ "%.2f"|format(item.price) }}
+
                                     </p>
 
 
                                     <p>
+
                                         <strong>Quantity:</strong>
+
                                         {{ item.quantity }}
+
                                     </p>
 
 
                                     <p>
+
                                         <strong>Subtotal:</strong>
+
                                         ₹{{
                                             "%.2f"|format(
                                                 item.price * item.quantity
                                             )
                                         }}
+
                                     </p>
 
                                 </div>
@@ -456,6 +452,9 @@
 
                     {% endif %}
 
+
+                    <!-- CANCEL BUTTON -->
+
                     {% if order.status == "Pending" %}
 
                         <form
@@ -464,12 +463,14 @@
                             style="display: inline;"
                             onsubmit="return confirm('Are you sure you want to cancel Order #{{ order.id }}?');"
                         >
+
                             <button
                                 type="submit"
                                 class="cancel-button"
                             >
                                 ❌ Cancel Order
                             </button>
+
                         </form>
 
                     {% endif %}
