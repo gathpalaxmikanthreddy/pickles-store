@@ -298,6 +298,23 @@ class Order(db.Model):
         default="COD"
     )
 
+    payment_status = db.Column(
+        db.String(30),
+        default="Pending"
+    )
+
+    razorpay_order_id = db.Column(
+        db.String(100),
+        nullable=True,
+        unique=True
+    )
+
+    razorpay_payment_id = db.Column(
+        db.String(100),
+        nullable=True,
+        unique=True
+    )
+
     created_at = db.Column(
         db.DateTime,
         default=db.func.current_timestamp()
@@ -339,6 +356,40 @@ with app.app_context():
                     'ALTER TABLE "order" '
                     "ADD COLUMN payment_method "
                     "VARCHAR(30) DEFAULT \'COD\'"
+                )
+            )
+
+    if "payment_status" not in order_columns:
+
+        with db.engine.begin() as connection:
+
+            connection.execute(
+                text(
+                    'ALTER TABLE "order" '
+                    "ADD COLUMN payment_status "
+                    "VARCHAR(30) DEFAULT 'Pending'"
+                )
+            )
+
+    if "razorpay_order_id" not in order_columns:
+
+        with db.engine.begin() as connection:
+
+            connection.execute(
+                text(
+                    'ALTER TABLE "order" '
+                    "ADD COLUMN razorpay_order_id VARCHAR(100)"
+                )
+            )
+
+    if "razorpay_payment_id" not in order_columns:
+
+        with db.engine.begin() as connection:
+
+            connection.execute(
+                text(
+                    'ALTER TABLE "order" '
+                    "ADD COLUMN razorpay_payment_id VARCHAR(100)"
                 )
             )
 
@@ -1140,6 +1191,11 @@ def place_order():
             total=calculated_total,
             status="Pending",
             payment_method=payment_method,
+            payment_status=(
+                "Pending"
+                if str(payment_method).lower() == "cod"
+                else "Pending"
+            ),
         )
 
         db.session.add(order)
@@ -1326,14 +1382,20 @@ def create_razorpay_order():
             )
         )
 
+        receipt = (
+            f"pickle_{session['user_mobile']}_"
+            f"{random.randint(100000, 999999)}"
+        )
+
         razorpay_order = razorpay_client.order.create(
             {
                 "amount": amount_paise,
                 "currency": "INR",
-                "receipt": (
-                    f"pickle_{session['user_mobile']}_"
-                    f"{random.randint(100000, 999999)}"
-                )
+                "receipt": receipt,
+                "notes": {
+                    "customer_mobile": session["user_mobile"],
+                    "store": "PICKELS STORE",
+                },
             }
         )
 
@@ -1375,292 +1437,134 @@ def create_razorpay_order():
 def verify_razorpay_payment():
 
     if not session.get("user_mobile"):
-
-        return jsonify(
-            {
-                "success": False,
-                "message": "Please login first."
-            }
-        ), 401
+        return jsonify({"success": False, "message": "Please login first."}), 401
 
     try:
+        data = request.get_json(silent=True) or {}
+        razorpay_order_id = str(data.get("razorpay_order_id", "")).strip()
+        razorpay_payment_id = str(data.get("razorpay_payment_id", "")).strip()
+        razorpay_signature = str(data.get("razorpay_signature", "")).strip()
+        items = data.get("items", [])
+        address = str(data.get("address", "")).strip() or str(session.get("user_address", "")).strip()
 
-        data = request.get_json(
-            silent=True
-        ) or {}
-
-        razorpay_order_id = str(
-            data.get(
-                "razorpay_order_id",
-                ""
-            )
-        ).strip()
-
-        razorpay_payment_id = str(
-            data.get(
-                "razorpay_payment_id",
-                ""
-            )
-        ).strip()
-
-        razorpay_signature = str(
-            data.get(
-                "razorpay_signature",
-                ""
-            )
-        ).strip()
-
-        items = data.get(
-            "items",
-            []
-        )
-
-        address = str(
-            data.get(
-                "address",
-                ""
-            )
-        ).strip()
-
+        if not razorpay_order_id or not razorpay_payment_id or not razorpay_signature:
+            return jsonify({"success": False, "message": "Payment verification data is missing."}), 400
+        if not isinstance(items, list) or not items:
+            return jsonify({"success": False, "message": "Your cart is empty."}), 400
         if not address:
+            return jsonify({"success": False, "message": "Please enter your delivery address."}), 400
 
-            address = str(
-                session.get(
-                    "user_address",
-                    ""
-                )
-            ).strip()
+        razorpay_client.utility.verify_payment_signature({
+            "razorpay_order_id": razorpay_order_id,
+            "razorpay_payment_id": razorpay_payment_id,
+            "razorpay_signature": razorpay_signature,
+        })
 
-        if (
-            not razorpay_order_id
-            or not razorpay_payment_id
-            or not razorpay_signature
-        ):
+        existing_order = Order.query.filter(
+            (Order.razorpay_payment_id == razorpay_payment_id) |
+            (Order.razorpay_order_id == razorpay_order_id)
+        ).first()
+        if existing_order:
+            return jsonify({"success": True, "order_id": existing_order.id, "message": "Payment already processed."})
 
-            return jsonify(
-                {
-                    "success": False,
-                    "message": (
-                        "Payment verification data is missing."
-                    )
-                }
-            ), 400
-
-        if not isinstance(
-            items,
-            list
-        ) or not items:
-
-            return jsonify(
-                {
-                    "success": False,
-                    "message": "Your cart is empty."
-                }
-            ), 400
-
-        if not address:
-
-            return jsonify(
-                {
-                    "success": False,
-                    "message": (
-                        "Please enter your delivery address."
-                    )
-                }
-            ), 400
-
-        razorpay_client.utility.verify_payment_signature(
-            {
-                "razorpay_order_id": razorpay_order_id,
-                "razorpay_payment_id": razorpay_payment_id,
-                "razorpay_signature": razorpay_signature,
-            }
-        )
+        razorpay_order = razorpay_client.order.fetch(razorpay_order_id)
+        if str(razorpay_order.get("currency", "")).upper() != "INR":
+            return jsonify({"success": False, "message": "Invalid payment currency."}), 400
 
         validated_items = []
         products_by_item = []
+        calculated_total = 0
 
         for item in items:
-
-            if not isinstance(
-                item,
-                dict
-            ):
-
-                return jsonify(
-                    {
-                        "success": False,
-                        "message": "Invalid cart item."
-                    }
-                ), 400
-
-            product_name = str(
-                item.get(
-                    "name",
-                    ""
-                )
-            ).strip()
-
+            if not isinstance(item, dict):
+                return jsonify({"success": False, "message": "Invalid cart item."}), 400
+            product_name = str(item.get("name", "")).strip()
             try:
+                quantity = int(item.get("quantity", 0))
+            except (TypeError, ValueError):
+                return jsonify({"success": False, "message": "Invalid quantity."}), 400
+            if not product_name or quantity <= 0:
+                return jsonify({"success": False, "message": "Invalid cart item."}), 400
 
-                quantity = int(
-                    item.get(
-                        "quantity",
-                        0
-                    )
-                )
-
-            except (
-                TypeError,
-                ValueError
-            ):
-
-                return jsonify(
-                    {
-                        "success": False,
-                        "message": "Invalid quantity."
-                    }
-                ), 400
-
-            product = Product.query.filter(
-                db.func.lower(Product.name)
-                == product_name.lower()
-            ).first()
-
+            product = Product.query.filter(db.func.lower(Product.name) == product_name.lower()).first()
             if not product or not product.active:
+                return jsonify({"success": False, "message": f"Product '{product_name}' is no longer available."}), 400
+            if product.stock < quantity:
+                return jsonify({"success": False, "message": f"Only {product.stock} unit(s) of {product.name} are available."}), 400
 
-                return jsonify(
-                    {
-                        "success": False,
-                        "message": (
-                            f"Product '{product_name}' "
-                            "is no longer available."
-                        )
-                    }
-                ), 400
+            products_by_item.append((product, quantity))
+            validated_items.append({
+                "name": product.name,
+                "price": product.price,
+                "quantity": quantity,
+                "image": product.image,
+            })
+            calculated_total += product.price * quantity
 
-            if quantity <= 0 or product.stock < quantity:
+        expected_amount = int(round(calculated_total * 100))
+        try:
+            razorpay_amount = int(razorpay_order.get("amount", 0))
+        except (TypeError, ValueError):
+            razorpay_amount = 0
+        if razorpay_amount != expected_amount:
+            return jsonify({"success": False, "message": "Payment amount does not match the order total."}), 400
 
-                return jsonify(
-                    {
-                        "success": False,
-                        "message": (
-                            f"Insufficient stock "
-                            f"for {product.name}."
-                        )
-                    }
-                ), 400
+        payment = razorpay_client.payment.fetch(razorpay_payment_id)
+        if str(payment.get("order_id", "")) != razorpay_order_id:
+            return jsonify({"success": False, "message": "Payment/order mismatch."}), 400
+        if int(payment.get("amount", 0)) != expected_amount:
+            return jsonify({"success": False, "message": "Payment amount mismatch."}), 400
+        if str(payment.get("currency", "")).upper() != "INR":
+            return jsonify({"success": False, "message": "Invalid payment currency."}), 400
 
-            products_by_item.append(
-                (
-                    product,
-                    quantity
-                )
-            )
+        payment_status = str(payment.get("status", "")).lower()
+        if payment_status == "authorized":
+            razorpay_client.payment.capture(razorpay_payment_id, expected_amount)
+            payment = razorpay_client.payment.fetch(razorpay_payment_id)
+            payment_status = str(payment.get("status", "")).lower()
 
-            validated_items.append(
-                {
-                    "name": product.name,
-                    "price": product.price,
-                    "quantity": quantity,
-                    "image": product.image,
-                }
-            )
+        if payment_status != "captured":
+            return jsonify({"success": False, "message": "Payment is not captured yet. Please contact PICKELS STORE."}), 400
 
-        calculated_total = sum(
-            product.price * quantity
-            for product, quantity
-            in products_by_item
-        )
-
-        customer = Customer.query.filter_by(
-            mobile=session.get(
-                "user_mobile"
-            )
-        ).first()
-
-        name = session.get(
-            "user_name",
-            ""
-        )
-
-        mobile = session.get(
-            "user_mobile",
-            ""
-        )
-
+        mobile = session.get("user_mobile", "")
+        name = session.get("user_name", "")
+        customer = Customer.query.filter_by(mobile=mobile).first()
         if customer:
-
             customer.name = name
             customer.address = address
-
         else:
-
-            customer = Customer(
-                name=name,
-                mobile=mobile,
-                address=address
-            )
-
-            db.session.add(customer)
-
+            db.session.add(Customer(name=name, mobile=mobile, address=address))
         session["user_address"] = address
 
         for product, quantity in products_by_item:
-
             product.stock -= quantity
 
         order = Order(
             name=name,
             mobile=mobile,
             address=address,
-            items=json.dumps(
-                validated_items
-            ),
+            items=json.dumps(validated_items),
             total=calculated_total,
             status="Pending",
             payment_method="Online",
+            payment_status="Paid",
+            razorpay_order_id=razorpay_order_id,
+            razorpay_payment_id=razorpay_payment_id,
         )
-
         db.session.add(order)
-
         db.session.commit()
 
         send_sms(
             "+91" + mobile,
-            (
-                f"PICKELS STORE: Online payment received "
-                f"for Order #{order.id}. "
-                f"Total ₹{calculated_total:.2f}. "
-                "Status: Pending."
-            )
+            f"PICKELS STORE: Online payment received for Order #{order.id}. Total ₹{calculated_total:.2f}. Status: Pending."
         )
 
-        return jsonify(
-            {
-                "success": True,
-                "order_id": order.id,
-                "message": (
-                    "Payment successful and order placed."
-                ),
-            }
-        )
+        return jsonify({"success": True, "order_id": order.id, "message": "Payment successful and order placed."})
 
     except Exception as e:
-
         db.session.rollback()
-
-        print(
-            "Razorpay verification error:",
-            e
-        )
-
-        return jsonify(
-            {
-                "success": False,
-                "message": "Payment verification failed."
-            }
-        ), 400
+        print("Razorpay verification error:", e)
+        return jsonify({"success": False, "message": "Payment verification failed."}), 400
 
 
 # --------------------------------------------------
@@ -2149,10 +2053,23 @@ def admin():
         if order.status != "Cancelled"
     )
 
+    paid_online_orders = [
+        order
+        for order in orders
+        if (order.payment_method or "").lower() == "online"
+        and (order.payment_status or "").lower() == "paid"
+    ]
+    online_payment_total = sum(
+        order.total
+        for order in paid_online_orders
+    )
+
     return render_template(
         "admin.html",
         orders=orders,
-        total_sales=total_sales
+        total_sales=total_sales,
+        online_payment_total=online_payment_total,
+        paid_online_order_count=len(paid_online_orders)
     )
 
 

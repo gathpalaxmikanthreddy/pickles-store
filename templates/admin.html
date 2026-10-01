@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
+
     <style>
         * {
             box-sizing: border-box;
         }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f6f9;
@@ -15,16 +17,19 @@
             padding: 20px;
             color: #333;
         }
+
         h1, h2 {
             margin-top: 0;
             color: #2c3e50;
         }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 15px;
             margin-bottom: 30px;
         }
+
         .stat-card {
             background: #ffffff;
             padding: 15px;
@@ -32,22 +37,26 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.08);
             text-align: center;
         }
+
         .stat-icon {
             font-size: 24px;
             margin-bottom: 5px;
         }
+
         .stat-title {
             font-size: 11px;
             color: #6c757d;
             font-weight: bold;
             letter-spacing: 0.5px;
         }
+
         .stat-value {
             font-size: 22px;
             font-weight: bold;
             color: #1a1a1a;
             margin-top: 5px;
         }
+
         .section-container {
             background: #ffffff;
             padding: 20px;
@@ -56,21 +65,87 @@
             margin-bottom: 30px;
             overflow-x: auto;
         }
+
         .orders-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 15px;
         }
-        .orders-table th, .orders-table td {
+
+        .orders-table-main {
+    min-width: 1400px;
+}
+
+.orders-table-main th,
+.orders-table-main td {
+    white-space: normal;
+}
+
+.orders-table-main th:nth-child(1),
+.orders-table-main td:nth-child(1) {
+    width: 80px;
+}
+
+.orders-table-main th:nth-child(2),
+.orders-table-main td:nth-child(2) {
+    width: 150px;
+}
+
+.orders-table-main th:nth-child(3),
+.orders-table-main td:nth-child(3) {
+    width: 300px;
+}
+
+.orders-table-main th:nth-child(4),
+.orders-table-main td:nth-child(4) {
+    width: 120px;
+}
+
+.orders-table-main th:nth-child(5),
+.orders-table-main td:nth-child(5) {
+    width: 140px;
+}
+
+.orders-table-main th:nth-child(6),
+.orders-table-main td:nth-child(6) {
+    width: 140px;
+}
+
+.orders-table-main th:nth-child(7),
+.orders-table-main td:nth-child(7) {
+    width: 190px;
+}
+
+.orders-table-main th:nth-child(8),
+.orders-table-main td:nth-child(8) {
+    width: 130px;
+}
+
+.orders-table-main th:nth-child(9),
+.orders-table-main td:nth-child(9) {
+    width: 220px;
+}
+
+        .orders-table-main .action-column,
+        .orders-table-main .action-cell {
+            width: 220px;
+            min-width: 220px;
+        }
+
+        .orders-table th,
+        .orders-table td {
             border: 1px solid #e9ecef;
             padding: 12px;
             text-align: left;
             vertical-align: middle;
         }
+
         .orders-table th {
             background-color: #f8f9fa;
             font-weight: 600;
+            white-space: nowrap;
         }
+
         .item-row {
             display: flex;
             align-items: center;
@@ -78,9 +153,11 @@
             margin-bottom: 6px;
             min-width: 220px;
         }
+
         .item-row:last-child {
             margin-bottom: 0;
         }
+
         .item-img {
             width: 40px;
             height: 40px;
@@ -90,13 +167,16 @@
             background: #f8f9fa;
             flex: 0 0 40px;
         }
+
         .item-details {
             line-height: 1.35;
         }
+
         .empty-items {
             color: #6c757d;
             font-style: italic;
         }
+
         .badge {
             padding: 5px 10px;
             border-radius: 4px;
@@ -104,24 +184,72 @@
             font-weight: bold;
             color: #fff;
             display: inline-block;
+            white-space: nowrap;
         }
-        .badge-pending { background-color: #ffc107; color: #000; }
-        .badge-confirmed { background-color: #28a745; }
-        .badge-shipped { background-color: #17a2b8; }
-        .badge-delivered { background-color: #007bff; }
-        .badge-cancelled { background-color: #dc3545; }
-        
+
+        .badge-pending {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        .badge-confirmed {
+            background-color: #28a745;
+        }
+
+        .badge-shipped {
+            background-color: #17a2b8;
+        }
+
+        .badge-delivered {
+            background-color: #007bff;
+        }
+
+        .badge-cancelled {
+            background-color: #dc3545;
+        }
+
+        .badge-paid {
+            background-color: #28a745;
+        }
+
+        .badge-payment-pending {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        .badge-not-required {
+            background-color: #6c757d;
+        }
+
+        .payment-method {
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .razorpay-id {
+            font-size: 11px;
+            word-break: break-all;
+            max-width: 180px;
+            color: #555;
+        }
+
         .status-form {
             display: flex;
             gap: 8px;
             align-items: center;
+            width: 100%;
+            flex-wrap: nowrap;
         }
+
         .status-select {
             padding: 6px 8px;
             border-radius: 4px;
             border: 1px solid #ced4da;
             background-color: #fff;
+            flex: 1 1 auto;
+            min-width: 0;
         }
+
         .btn-update {
             padding: 6px 12px;
             background-color: #007bff;
@@ -130,224 +258,577 @@
             border-radius: 4px;
             cursor: pointer;
             font-weight: 500;
+            flex: 0 0 auto;
+            white-space: nowrap;
         }
+
         .btn-update:hover {
             background-color: #0056b3;
         }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .section-container {
+                padding: 12px;
+            }
+
+            .orders-table th,
+            .orders-table td {
+                padding: 8px;
+                font-size: 13px;
+            }
+
+            .status-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .status-select,
+            .btn-update {
+                width: 100%;
+            }
+
+            .orders-table-main .action-column,
+            .orders-table-main .action-cell {
+                width: 160px;
+                min-width: 160px;
+            }
+        }
     </style>
 </head>
+
 <body>
 
     <h1>Admin Dashboard</h1>
 
-    <!-- 🛠️ ADMIN MANAGEMENT OPTIONS -->
-<div style="
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-    margin-bottom: 30px;
-">
-    <h2>🛠️ Management</h2>
-
+    <!-- ADMIN MANAGEMENT OPTIONS -->
     <div style="
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        margin-bottom: 30px;
     ">
-        <a href="/admin/products"
-           style="
-               display: inline-block;
-               padding: 10px 16px;
-               background: #28a745;
-               color: white;
-               text-decoration: none;
-               border-radius: 5px;
-               font-weight: 600;
-           ">
-            📦 Manage Products
-        </a>
 
-        <a href="/admin/products"
-           style="
-               display: inline-block;
-               padding: 10px 16px;
-               background: #007bff;
-               color: white;
-               text-decoration: none;
-               border-radius: 5px;
-               font-weight: 600;
-           ">
-            ➕ Add Product
-        </a>
+        <h2>🛠️ Management</h2>
 
-        <a href="/admin/products"
-           style="
-               display: inline-block;
-               padding: 10px 16px;
-               background: #6f42c1;
-               color: white;
-               text-decoration: none;
-               border-radius: 5px;
-               font-weight: 600;
-           ">
-            📊 Stock Management
-        </a>
+        <div style="
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        ">
+
+            <a href="/admin/products"
+               style="
+                   display: inline-block;
+                   padding: 10px 16px;
+                   background: #28a745;
+                   color: white;
+                   text-decoration: none;
+                   border-radius: 5px;
+                   font-weight: 600;
+               ">
+                📦 Manage Products
+            </a>
+
+            <a href="/admin/products"
+               style="
+                   display: inline-block;
+                   padding: 10px 16px;
+                   background: #007bff;
+                   color: white;
+                   text-decoration: none;
+                   border-radius: 5px;
+                   font-weight: 600;
+               ">
+                ➕ Add Product
+            </a>
+
+            <a href="/admin/products"
+               style="
+                   display: inline-block;
+                   padding: 10px 16px;
+                   background: #6f42c1;
+                   color: white;
+                   text-decoration: none;
+                   border-radius: 5px;
+                   font-weight: 600;
+               ">
+                📊 Stock Management
+            </a>
+
+        </div>
     </div>
-</div>
 
-    <!-- 📊 STATISTICS CARDS -->
+    <!-- STATISTICS -->
     <div class="stats-grid">
+
         <div class="stat-card">
             <div class="stat-icon">📦</div>
             <div class="stat-title">TOTAL ORDERS</div>
-            <div class="stat-value">{{ orders|length }}</div>
+            <div class="stat-value">
+                {{ orders|length }}
+            </div>
         </div>
 
         <div class="stat-card">
             <div class="stat-icon">⏳</div>
             <div class="stat-title">PENDING ORDERS</div>
-            <div class="stat-value">{{ orders|selectattr("status", "equalto", "Pending")|list|length }}</div>
+            <div class="stat-value">
+                {{ orders|selectattr("status", "equalto", "Pending")|list|length }}
+            </div>
         </div>
 
         <div class="stat-card">
             <div class="stat-icon">✅</div>
             <div class="stat-title">CONFIRMED ORDERS</div>
-            <div class="stat-value">{{ orders|selectattr("status", "equalto", "Confirmed")|list|length }}</div>
+            <div class="stat-value">
+                {{ orders|selectattr("status", "equalto", "Confirmed")|list|length }}
+            </div>
         </div>
 
         <div class="stat-card">
             <div class="stat-icon">❌</div>
             <div class="stat-title">CANCELLED ORDERS</div>
-            <div class="stat-value">{{ orders|selectattr("status", "equalto", "Cancelled")|list|length }}</div>
+            <div class="stat-value">
+                {{ orders|selectattr("status", "equalto", "Cancelled")|list|length }}
+            </div>
         </div>
 
         <div class="stat-card">
             <div class="stat-icon">💰</div>
             <div class="stat-title">TOTAL SALES</div>
-            <div class="stat-value">₹{{ total_sales }}</div>
+            <div class="stat-value">
+                ₹{{ total_sales }}
+            </div>
         </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">💳</div>
+            <div class="stat-title">ONLINE PAYMENTS RECEIVED</div>
+            <div class="stat-value">
+                ₹{{ '%.2f'|format(online_payment_total) }}
+            </div>
+            <div class="stat-title">
+                {{ paid_online_order_count }} paid online order(s)
+            </div>
+        </div>
+
     </div>
 
-    <!-- 📦 ALL ORDERS SECTION -->
+    <!-- ALL ORDERS -->
     <div class="section-container">
+
         <h2>📦 All Customer Orders</h2>
-        <table class="orders-table">
+
+        <table class="orders-table orders-table-main">
+
             <thead>
                 <tr>
                     <th>Order ID</th>
                     <th>Customer Name</th>
                     <th>Items</th>
                     <th>Total Price</th>
+                    <th>Payment Method</th>
+                    <th>Payment Status</th>
+                    <th>Payment Reference</th>
                     <th>Status</th>
-                    <th>Action</th>
+                    <th class="action-column">Action</th>
                 </tr>
             </thead>
+
             <tbody>
+
                 {% for order in orders %}
+
                 <tr>
-                    <td><strong>#{{ order.id }}</strong></td>
-                    <td>{{ order.name or order.mobile or 'Guest' }}</td>
+
                     <td>
+                        <strong>#{{ order.id }}</strong>
+                    </td>
+
+                    <td>
+                        {{ order.name or order.mobile or 'Guest' }}
+                    </td>
+
+                    <td>
+
                         {% if not order.display_items %}
-                            <span class="empty-items">No item details available.</span>
+
+                            <span class="empty-items">
+                                No item details available.
+                            </span>
+
                         {% else %}
+
                             {% for item in order.display_items %}
+
                             <div class="item-row">
+
                                 {% if item.image %}
-                                <img src="/static/images/{{ item.image|default('mango-pickle.png', true) }}" alt="{{ item.name|default('Product', true) }}" class="item-img" onerror="this.onerror=null;this.src='/static/images/mango-pickle.png'">
+
+                                <img
+                                    src="/static/images/{{ item.image|default('mango-pickle.png', true) }}"
+                                    alt="{{ item.name|default('Product', true) }}"
+                                    class="item-img"
+                                    onerror="this.onerror=null;this.src='/static/images/mango-pickle.png'"
+                                >
+
                                 {% endif %}
+
                                 <div class="item-details">
-                                    <strong>{{ item.name|default('Unnamed product', true) }}</strong><br>
-                                    <small>Qty: {{ item.quantity|default(1, true) }} | ₹{{ item.price|default(0, true) }}</small>
+
+                                    <strong>
+                                        {{ item.name|default('Unnamed product', true) }}
+                                    </strong>
+
+                                    <br>
+
+                                    <small>
+                                        Qty:
+                                        {{ item.quantity|default(1, true) }}
+                                        |
+                                        ₹{{ item.price|default(0, true) }}
+                                    </small>
+
                                 </div>
+
                             </div>
+
                             {% endfor %}
+
                         {% endif %}
+
                     </td>
-                    <td><strong>₹{{ '%.2f'|format(order.total|default(0, true)|float) }}</strong></td>
+
                     <td>
-                        {% if order.status == 'Pending' %}
-                            <span class="badge badge-pending">Pending</span>
-                        {% elif order.status == 'Confirmed' %}
-                            <span class="badge badge-confirmed">Confirmed</span>
-                        {% elif order.status == 'Shipped' %}
-                            <span class="badge badge-shipped">Shipped</span>
-                        {% elif order.status == 'Delivered' %}
-                            <span class="badge badge-delivered">Delivered</span>
-                        {% elif order.status == 'Cancelled' %}
-                            <span class="badge badge-cancelled">Cancelled</span>
+                        <strong>
+                            ₹{{ '%.2f'|format(order.total|default(0, true)|float) }}
+                        </strong>
+                    </td>
+
+                    <td>
+                        {{ order.payment_method or 'COD' }}
+                    </td>
+
+                    <td>
+                        {% if order.payment_status == 'Paid' %}
+                            <span class="badge badge-paid">Paid</span>
+                        {% elif order.payment_status == 'Not Required' %}
+                            <span class="badge badge-not-required">Not Required</span>
                         {% else %}
-                            <span class="badge">{{ order.status }}</span>
+                            <span class="badge badge-payment-pending">
+                                {{ order.payment_status|default('Pending', true) }}
+                            </span>
                         {% endif %}
                     </td>
-                    <td>
-                        <form action="/update-order/{{ order.id }}" method="POST" class="status-form">
-                            <select name="status" class="status-select">
-                                <option value="Pending" {% if order.status == 'Pending' %}selected{% endif %}>Pending</option>
-                                <option value="Confirmed" {% if order.status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
-                                <option value="Shipped" {% if order.status == 'Shipped' %}selected{% endif %}>Shipped</option>
-                                <option value="Delivered" {% if order.status == 'Delivered' %}selected{% endif %}>Delivered</option>
-                                <option value="Cancelled" {% if order.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
-                            </select>
-                            <button type="submit" class="btn-update">Update</button>
-                        </form>
+
+                    <td class="razorpay-id">
+                        {{ order.razorpay_payment_id or order.razorpay_order_id or '—' }}
                     </td>
+
+                    <td>
+
+                        {% if order.status == 'Pending' %}
+
+                            <span class="badge badge-pending">
+                                Pending
+                            </span>
+
+                        {% elif order.status == 'Confirmed' %}
+
+                            <span class="badge badge-confirmed">
+                                Confirmed
+                            </span>
+
+                        {% elif order.status == 'Shipped' %}
+
+                            <span class="badge badge-shipped">
+                                Shipped
+                            </span>
+
+                        {% elif order.status == 'Delivered' %}
+
+                            <span class="badge badge-delivered">
+                                Delivered
+                            </span>
+
+                        {% elif order.status == 'Cancelled' %}
+
+                            <span class="badge badge-cancelled">
+                                Cancelled
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge">
+                                {{ order.status }}
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <!-- ACTION -->
+                    <td class="action-cell">
+
+                        <form
+                            action="/update-order/{{ order.id }}"
+                            method="POST"
+                            class="status-form"
+                        >
+
+                            <select
+                                name="status"
+                                class="status-select"
+                            >
+
+                                <option
+                                    value="Pending"
+                                    {% if order.status == 'Pending' %}
+                                    selected
+                                    {% endif %}
+                                >
+                                    Pending
+                                </option>
+
+                                <option
+                                    value="Confirmed"
+                                    {% if order.status == 'Confirmed' %}
+                                    selected
+                                    {% endif %}
+                                >
+                                    Confirmed
+                                </option>
+
+                                <option
+                                    value="Shipped"
+                                    {% if order.status == 'Shipped' %}
+                                    selected
+                                    {% endif %}
+                                >
+                                    Shipped
+                                </option>
+
+                                <option
+                                    value="Delivered"
+                                    {% if order.status == 'Delivered' %}
+                                    selected
+                                    {% endif %}
+                                >
+                                    Delivered
+                                </option>
+
+                                <option
+                                    value="Cancelled"
+                                    {% if order.status == 'Cancelled' %}
+                                    selected
+                                    {% endif %}
+                                >
+                                    Cancelled
+                                </option>
+
+                            </select>
+
+                            <button
+                                type="submit"
+                                class="btn-update"
+                            >
+                                Update
+                            </button>
+
+                        </form>
+
+                    </td>
+
                 </tr>
+
                 {% else %}
+
                 <tr>
-                    <td colspan="6" style="text-align: center;">No orders found.</td>
+
+                    <td
+                        colspan="9"
+                        style="text-align: center;"
+                    >
+                        No orders found.
+                    </td>
+
                 </tr>
+
                 {% endfor %}
+
             </tbody>
+
         </table>
+
     </div>
 
-    <!-- ❌ DEDICATED CANCELLED ORDERS LIST -->
+    <!-- CANCELLED ORDERS -->
     <div class="section-container">
+
         <h2>❌ Cancelled Orders List</h2>
+
         <table class="orders-table">
+
             <thead>
+
                 <tr>
                     <th>Order ID</th>
                     <th>Customer Name</th>
                     <th>Items</th>
                     <th>Total Price</th>
+                    <th>Payment Method</th>
+                    <th>Payment Status</th>
                     <th>Status</th>
                 </tr>
+
             </thead>
+
             <tbody>
+
                 {% for order in orders if order.status == 'Cancelled' %}
+
                 <tr>
-                    <td><strong>#{{ order.id }}</strong></td>
-                    <td>{{ order.name or order.mobile or 'Guest' }}</td>
+
                     <td>
-                        {% if not order.display_items %}
-                            <span class="empty-items">No item details available.</span>
-                        {% else %}
-                            {% for item in order.display_items %}
-                            <div class="item-row">
-                                {% if item.image %}
-                                <img src="/static/images/{{ item.image|default('mango-pickle.png', true) }}" alt="{{ item.name|default('Product', true) }}" class="item-img" onerror="this.onerror=null;this.src='/static/images/mango-pickle.png'">
-                                {% endif %}
-                                <div class="item-details">
-                                    <strong>{{ item.name|default('Unnamed product', true) }}</strong><br>
-                                    <small>Qty: {{ item.quantity|default(1, true) }} | ₹{{ item.price|default(0, true) }}</small>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        {% endif %}
+                        <strong>
+                            #{{ order.id }}
+                        </strong>
                     </td>
-                    <td><strong>₹{{ '%.2f'|format(order.total|default(0, true)|float) }}</strong></td>
-                    <td><span class="badge badge-cancelled">Cancelled</span></td>
+
+                    <td>
+                        {{ order.name or order.mobile or 'Guest' }}
+                    </td>
+
+                    <td>
+
+                        {% if not order.display_items %}
+
+                            <span class="empty-items">
+                                No item details available.
+                            </span>
+
+                        {% else %}
+
+                            {% for item in order.display_items %}
+
+                            <div class="item-row">
+
+                                {% if item.image %}
+
+                                <img
+                                    src="/static/images/{{ item.image|default('mango-pickle.png', true) }}"
+                                    alt="{{ item.name|default('Product', true) }}"
+                                    class="item-img"
+                                    onerror="this.onerror=null;this.src='/static/images/mango-pickle.png'"
+                                >
+
+                                {% endif %}
+
+                                <div class="item-details">
+
+                                    <strong>
+                                        {{ item.name|default('Unnamed product', true) }}
+                                    </strong>
+
+                                    <br>
+
+                                    <small>
+                                        Qty:
+                                        {{ item.quantity|default(1, true) }}
+                                        |
+                                        ₹{{ item.price|default(0, true) }}
+                                    </small>
+
+                                </div>
+
+                            </div>
+
+                            {% endfor %}
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+                        <strong>
+                            ₹{{ '%.2f'|format(order.total|default(0, true)|float) }}
+                        </strong>
+                    </td>
+
+                    <td>
+
+                        {% if order.payment_method == 'Online' %}
+
+                            <span class="payment-method">
+                                💳 Online
+                            </span>
+
+                        {% else %}
+
+                            <span class="payment-method">
+                                💵 COD
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {% if order.payment_status == 'Paid' %}
+
+                            <span class="badge badge-paid">
+                                Paid
+                            </span>
+
+                        {% elif order.payment_status == 'Not Required' %}
+
+                            <span class="badge badge-not-required">
+                                Not Required
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge badge-payment-pending">
+                                {{ order.payment_status|default('Pending', true) }}
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+                        <span class="badge badge-cancelled">
+                            Cancelled
+                        </span>
+                    </td>
+
                 </tr>
+
                 {% else %}
+
                 <tr>
-                    <td colspan="5" style="text-align: center;">No cancelled orders recorded.</td>
+
+                    <td
+                        colspan="7"
+                        style="text-align: center;"
+                    >
+                        No cancelled orders recorded.
+                    </td>
+
                 </tr>
+
                 {% endfor %}
+
             </tbody>
+
         </table>
+
     </div>
 
 </body>
