@@ -1,7 +1,8 @@
 ﻿import os
 import json
 import random
-from datetime import timedelta
+import time
+from datetime import date, datetime, timedelta
 from uuid import uuid4
 
 import requests
@@ -11,6 +12,7 @@ from flask import Flask, jsonify, redirect, render_template, request, session
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect, text
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
 
@@ -23,7 +25,13 @@ if not app.secret_key:
 database_url = os.getenv("DATABASE_URL", "sqlite:///pickels_store.db")
 
 if database_url.startswith("postgres://"):
-    database_url = database_url.replace("postgres://", "postgresql://", 1)
+    database_url = database_url.replace(
+        "postgres://", "postgresql+psycopg://", 1
+    )
+elif database_url.startswith("postgresql://"):
+    database_url = database_url.replace(
+        "postgresql://", "postgresql+psycopg://", 1
+    )
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -65,7 +73,6 @@ def allowed_image(filename):
     extension = filename.rsplit(".", 1)[1].lower()
 
     return extension in ALLOWED_IMAGE_EXTENSIONS
-
 
 def save_uploaded_image(file):
     """
@@ -119,14 +126,6 @@ def fromjson_filter(value):
         return []
 
 
-# --------------------------------------------------
-# TEXTBEE
-# --------------------------------------------------
-
-TEXTBEE_API_URL = "https://api.textbee.dev/api/v1/gateway/send-sms"
-TEXTBEE_API_KEY = os.getenv("TEXTBEE_API_KEY")
-TEXTBEE_DEVICE_ID = os.getenv("TEXTBEE_DEVICE_ID")
-
 
 # --------------------------------------------------
 # RAZORPAY
@@ -156,6 +155,11 @@ class Customer(db.Model):
         db.String(20),
         unique=True,
         nullable=False
+    )
+
+    password = db.Column(
+        db.String(255),
+        nullable=True
     )
 
     address = db.Column(
@@ -393,6 +397,20 @@ with app.app_context():
                 )
             )
 
+    customer_columns = [
+        column["name"]
+        for column in inspector.get_columns("customer")
+    ]
+
+    if "password" not in customer_columns:
+        with db.engine.begin() as connection:
+            connection.execute(
+                text(
+                    'ALTER TABLE "customer" '
+                    "ADD COLUMN password VARCHAR(255)"
+                )
+            )
+
     product_columns = [
         column["name"]
         for column in inspector.get_columns("product")
@@ -414,49 +432,67 @@ with app.app_context():
 # SEND SMS
 # --------------------------------------------------
 
+TEXTBEE_API_KEY = os.getenv("TEXTBEE_API_KEY")
+TEXTBEE_DEVICE_ID = os.getenv("TEXTBEE_DEVICE_ID")
+TEXTBEE_URL = "https://api.textbee.dev/api/v1/gateway/send-sms"
+
+
+def format_mobile(phone_number):
+    phone_number = str(phone_number or "").strip().replace(" ", "")
+
+    if phone_number.startswith("+91"):
+        return phone_number
+
+    if phone_number.startswith("91") and len(phone_number) == 12:
+        return "+" + phone_number
+
+    if phone_number.startswith("0") and len(phone_number) == 11:
+        return "+91" + phone_number[1:]
+
+    if phone_number.isdigit() and len(phone_number) == 10:
+        return "+91" + phone_number
+
+    return phone_number
+
+
 def send_sms(phone, message):
-
+    """Send an SMS through TextBee."""
     if not TEXTBEE_API_KEY:
-
-        print("TEXTBEE_API_KEY is missing.")
-
+        print("TEXTBEE ERROR: API key not configured")
         return False
 
-    headers = {
-        "x-api-key": TEXTBEE_API_KEY,
-        "Content-Type": "application/json",
-    }
-
-    data = {
-        "recipients": [phone],
-        "message": message,
-    }
-
-    if TEXTBEE_DEVICE_ID:
-
-        data["deviceId"] = TEXTBEE_DEVICE_ID
+    if not phone:
+        print("TEXTBEE ERROR: phone number missing")
+        return False
 
     try:
+        headers = {
+            "Content-Type": "application/json",
+            "x-api-key": TEXTBEE_API_KEY,
+        }
+
+        payload = {
+            "recipients": [format_mobile(phone)],
+            "message": message,
+        }
+
+        if TEXTBEE_DEVICE_ID:
+            payload["deviceId"] = TEXTBEE_DEVICE_ID
 
         response = requests.post(
-            TEXTBEE_API_URL,
+            TEXTBEE_URL,
             headers=headers,
-            json=data,
-            timeout=20,
+            json=payload,
+            timeout=15,
         )
 
-        print(
-            "TextBee response:",
-            response.status_code,
-            response.text
-        )
+        print("TEXTBEE STATUS:", response.status_code)
+        print("TEXTBEE RESPONSE:", response.text)
 
-        return response.ok
+        return 200 <= response.status_code < 300
 
-    except Exception as e:
-
-        print("SMS error:", e)
-
+    except requests.RequestException as exc:
+        print("TEXTBEE ERROR:", exc)
         return False
 
 
@@ -606,6 +642,221 @@ def cart():
 
 
 # --------------------------------------------------
+# CUSTOMER REGISTRATION
+# --------------------------------------------------
+
+@app.route(
+    "/register",
+    methods=["GET", "POST"]
+)
+def register():
+
+    if request.method == "POST":
+
+        name = request.form.get("name", "").strip()
+        mobile = request.form.get("mobile", "").strip()
+        address = request.form.get("address", "").strip()
+        password = request.form.get("password", "").strip()
+        confirm_password = request.form.get(
+            "confirm_password",
+            ""
+        ).strip()
+
+        if not all([
+            name,
+            mobile,
+            address,
+            password,
+            confirm_password,
+        ]):
+            return render_template(
+                "register.html",
+                error="Please fill all fields."
+            )
+
+        if len(password) < 6:
+            return render_template(
+                "register.html",
+                error="Password must be at least 6 characters."
+            )
+
+        if password != confirm_password:
+            return render_template(
+                "register.html",
+                error="Passwords do not match."
+            )
+
+        mobile = mobile.replace(" ", "")
+
+        if mobile.startswith("+91"):
+            mobile = mobile[3:]
+
+        if mobile.startswith("91") and len(mobile) == 12:
+            mobile = mobile[2:]
+
+        if len(mobile) != 10 or not mobile.isdigit():
+            return render_template(
+                "register.html",
+                error="Please enter a valid 10-digit mobile number."
+            )
+
+        customer = Customer.query.filter_by(
+            mobile=mobile
+        ).first()
+
+        if customer and customer.password:
+            return render_template(
+                "register.html",
+                error="This mobile number is already registered. Please login."
+            )
+
+        otp = str(
+            random.randint(100000, 999999)
+        )
+
+        session["register_otp"] = otp
+        session["register_otp_mobile"] = mobile
+        session["register_name"] = name
+        session["register_address"] = address
+        session["register_password"] = generate_password_hash(password)
+        session["register_otp_expires"] = time.time() + 300
+        session["register_otp_attempts"] = 0
+
+        message = (
+            f"Your PICKELS STORE registration OTP is {otp}. "
+            "Do not share this OTP with anyone."
+        )
+
+        if not send_sms("+91" + mobile, message):
+            for key in [
+                "register_otp",
+                "register_otp_mobile",
+                "register_name",
+                "register_address",
+                "register_password",
+                "register_otp_expires",
+                "register_otp_attempts",
+            ]:
+                session.pop(key, None)
+
+            return render_template(
+                "register.html",
+                error="Unable to send OTP. Please try again."
+            )
+
+        return redirect("/verify-registration-otp")
+
+    return render_template("register.html")
+
+
+# --------------------------------------------------
+# VERIFY REGISTRATION OTP
+# --------------------------------------------------
+
+@app.route(
+    "/verify-registration-otp",
+    methods=["GET", "POST"]
+)
+def verify_registration_otp():
+
+    if not session.get("register_otp"):
+        return redirect("/register")
+
+    if request.method == "POST":
+
+        if time.time() > session.get(
+            "register_otp_expires",
+            0
+        ):
+            return render_template(
+                "verify_registration_otp.html",
+                error="OTP expired. Please register again."
+            )
+
+        entered_otp = request.form.get(
+            "otp",
+            ""
+        ).strip()
+
+        attempts = session.get(
+            "register_otp_attempts",
+            0
+        )
+
+        if attempts >= 5:
+            return render_template(
+                "verify_registration_otp.html",
+                error="Too many incorrect attempts. Please register again."
+            )
+
+        if entered_otp != session.get("register_otp"):
+            session["register_otp_attempts"] = attempts + 1
+
+            return render_template(
+                "verify_registration_otp.html",
+                error="Invalid OTP. Please try again."
+            )
+
+        mobile = session.get(
+            "register_otp_mobile"
+        )
+        name = session.get(
+            "register_name",
+            ""
+        )
+        address = session.get(
+            "register_address",
+            ""
+        )
+        password_hash = session.get(
+            "register_password"
+        )
+
+        if not mobile or not password_hash:
+            return redirect("/register")
+
+        customer = Customer.query.filter_by(
+            mobile=mobile
+        ).first()
+
+        if customer:
+            customer.name = name
+            customer.address = address
+            customer.password = password_hash
+        else:
+            customer = Customer(
+                name=name,
+                mobile=mobile,
+                address=address,
+                password=password_hash,
+            )
+            db.session.add(customer)
+
+        db.session.commit()
+
+        session["user_mobile"] = mobile
+        session["user_name"] = name
+        session["user_address"] = address
+
+        for key in [
+            "register_otp",
+            "register_otp_mobile",
+            "register_name",
+            "register_address",
+            "register_password",
+            "register_otp_expires",
+            "register_otp_attempts",
+        ]:
+            session.pop(key, None)
+
+        return redirect("/")
+
+    return render_template(
+        "verify_registration_otp.html"
+    )
+
+
+# --------------------------------------------------
 # CUSTOMER LOGIN
 # --------------------------------------------------
 
@@ -617,27 +868,41 @@ def login():
 
     if request.method == "POST":
 
-        name = request.form.get(
-            "name",
-            ""
-        ).strip()
-
-        address = request.form.get(
-            "address",
-            ""
-        ).strip()
-
         mobile = request.form.get(
             "mobile",
             ""
         ).strip()
 
-        if not name or not address or not mobile:
+        password = request.form.get(
+            "password",
+            ""
+        ).strip()
+
+        # ------------------------------------------
+        # REQUIRED FIELDS
+        # ------------------------------------------
+
+        if not mobile or not password:
 
             return render_template(
                 "login.html",
-                error="Please fill all fields."
+                error="Please enter mobile number and password."
             )
+
+        # ------------------------------------------
+        # PASSWORD VALIDATION
+        # ------------------------------------------
+
+        if len(password) < 6:
+
+            return render_template(
+                "login.html",
+                error="Password must be at least 6 characters."
+            )
+
+        # ------------------------------------------
+        # MOBILE NUMBER NORMALIZATION
+        # ------------------------------------------
 
         mobile = mobile.replace(
             " ",
@@ -659,40 +924,51 @@ def login():
                 error="Please enter a valid 10-digit mobile number.",
             )
 
-        otp = str(
-            random.randint(
-                100000,
-                999999
-            )
-        )
+        # ------------------------------------------
+        # FIND CUSTOMER
+        # ------------------------------------------
 
-        session["otp"] = otp
-        session["otp_mobile"] = mobile
-        session["user_name"] = name
-        session["user_address"] = address
+        customer = Customer.query.filter_by(
+            mobile=mobile
+        ).first()
 
-        message = (
-            f"Your PICKELS STORE OTP is {otp}. "
-            "Do not share this OTP with anyone."
-        )
-
-        phone = "+91" + mobile
-
-        sent = send_sms(
-            phone,
-            message
-        )
-
-        if not sent:
+        if not customer:
 
             return render_template(
                 "login.html",
-                error="Unable to send OTP. Please try again.",
+                error="Account not found. Please register first."
             )
 
-        return redirect(
-            "/verify-otp"
+        # ------------------------------------------
+        # PASSWORD CHECK
+        # ------------------------------------------
+
+        if not customer.password:
+
+            return render_template(
+                "login.html",
+                error="Please reset your password using Forgot Password."
+            )
+
+        if not check_password_hash(
+            customer.password,
+            password
+        ):
+
+            return render_template(
+                "login.html",
+                error="Invalid mobile number or password."
+            )
+
+        session["user_mobile"] = customer.mobile
+
+        session["user_name"] = customer.name
+
+        session["user_address"] = (
+            customer.address or ""
         )
+
+        return redirect("/")
 
     return render_template(
         "login.html"
@@ -700,96 +976,199 @@ def login():
 
 
 # --------------------------------------------------
-# VERIFY OTP
+# FORGOT PASSWORD
 # --------------------------------------------------
 
 @app.route(
-    "/verify-otp",
+    "/forgot-password",
     methods=["GET", "POST"]
 )
-def verify_otp():
+def forgot_password():
 
     if request.method == "POST":
+
+        mobile = request.form.get(
+            "mobile",
+            ""
+        ).strip().replace(" ", "")
+
+        if mobile.startswith("+91"):
+            mobile = mobile[3:]
+
+        if mobile.startswith("91") and len(mobile) == 12:
+            mobile = mobile[2:]
+
+        if len(mobile) != 10 or not mobile.isdigit():
+            return render_template(
+                "forgot_password.html",
+                error="Please enter a valid 10-digit mobile number."
+            )
+
+        customer = Customer.query.filter_by(
+            mobile=mobile
+        ).first()
+
+        if not customer:
+            return render_template(
+                "forgot_password.html",
+                error="Account not found. Please register first."
+            )
+
+        otp = str(random.randint(100000, 999999))
+
+        session["reset_otp"] = otp
+        session["reset_otp_mobile"] = mobile
+        session["reset_otp_expires"] = time.time() + 300
+        session["reset_otp_attempts"] = 0
+        session.pop("reset_otp_verified", None)
+
+        message = (
+            f"Your PICKELS STORE password reset OTP is {otp}. "
+            "Do not share this OTP with anyone."
+        )
+
+        if not send_sms("+91" + mobile, message):
+            for key in [
+                "reset_otp",
+                "reset_otp_mobile",
+                "reset_otp_expires",
+                "reset_otp_attempts",
+                "reset_otp_verified",
+            ]:
+                session.pop(key, None)
+
+            return render_template(
+                "forgot_password.html",
+                error="Unable to send OTP. Please try again."
+            )
+
+        return redirect("/verify-reset-otp")
+
+    return render_template("forgot_password.html")
+
+
+@app.route(
+    "/verify-reset-otp",
+    methods=["GET", "POST"]
+)
+def verify_reset_otp():
+
+    if not session.get("reset_otp"):
+        return redirect("/forgot-password")
+
+    if request.method == "POST":
+
+        if time.time() > session.get("reset_otp_expires", 0):
+            for key in [
+                "reset_otp",
+                "reset_otp_mobile",
+                "reset_otp_expires",
+                "reset_otp_attempts",
+            ]:
+                session.pop(key, None)
+
+            return render_template(
+                "verify_reset_otp.html",
+                error="OTP expired. Please request a new one."
+            )
+
+        attempts = session.get("reset_otp_attempts", 0)
+
+        if attempts >= 5:
+            for key in [
+                "reset_otp",
+                "reset_otp_mobile",
+                "reset_otp_expires",
+                "reset_otp_attempts",
+            ]:
+                session.pop(key, None)
+
+            return render_template(
+                "verify_reset_otp.html",
+                error="Too many incorrect attempts. Please request a new OTP."
+            )
 
         entered_otp = request.form.get(
             "otp",
             ""
         ).strip()
 
-        saved_otp = session.get(
-            "otp"
-        )
-
-        if not saved_otp:
+        if entered_otp != session.get("reset_otp"):
+            session["reset_otp_attempts"] = attempts + 1
 
             return render_template(
-                "verify_otp.html",
-                error="OTP expired. Please login again.",
+                "verify_reset_otp.html",
+                error="Invalid OTP. Please try again."
             )
 
-        if entered_otp != saved_otp:
+        session["reset_otp_verified"] = True
+        session.pop("reset_otp", None)
+        session.pop("reset_otp_expires", None)
+        session.pop("reset_otp_attempts", None)
 
+        return redirect("/reset-password")
+
+    return render_template("verify_reset_otp.html")
+
+
+@app.route(
+    "/reset-password",
+    methods=["GET", "POST"]
+)
+def reset_password():
+
+    mobile = session.get("reset_otp_mobile")
+
+    if not mobile or not session.get("reset_otp_verified"):
+        return redirect("/forgot-password")
+
+    customer = Customer.query.filter_by(
+        mobile=mobile
+    ).first()
+
+    if not customer:
+        session.pop("reset_otp_mobile", None)
+        session.pop("reset_otp_verified", None)
+        return redirect("/forgot-password")
+
+    if request.method == "POST":
+
+        password = request.form.get(
+            "password",
+            ""
+        ).strip()
+        confirm_password = request.form.get(
+            "confirm_password",
+            ""
+        ).strip()
+
+        if not password or not confirm_password:
             return render_template(
-                "verify_otp.html",
-                error="Invalid OTP. Please try again.",
+                "reset_password.html",
+                error="Please fill in both password fields."
             )
 
-        user_mobile = session.get(
-            "otp_mobile"
-        )
-
-        user_name = session.get(
-            "user_name",
-            ""
-        )
-
-        user_address = session.get(
-            "user_address",
-            ""
-        )
-
-        customer = Customer.query.filter_by(
-            mobile=user_mobile
-        ).first()
-
-        if customer:
-
-            customer.name = user_name
-            customer.address = user_address
-
-        else:
-
-            customer = Customer(
-                name=user_name,
-                mobile=user_mobile,
-                address=user_address,
+        if len(password) < 6:
+            return render_template(
+                "reset_password.html",
+                error="Password must be at least 6 characters."
             )
 
-            db.session.add(customer)
+        if password != confirm_password:
+            return render_template(
+                "reset_password.html",
+                error="Passwords do not match."
+            )
 
+        customer.password = generate_password_hash(password)
         db.session.commit()
 
-        session["user_mobile"] = user_mobile
-        session["user_name"] = customer.name
-        session["user_address"] = (
-            customer.address or ""
-        )
+        session.pop("reset_otp_mobile", None)
+        session.pop("reset_otp_verified", None)
 
-        session.pop(
-            "otp",
-            None
-        )
+        return redirect("/login")
 
-        session.pop(
-            "otp_mobile",
-            None
-        )
-
-        return redirect("/")
-
-    return render_template(
-        "verify_otp.html"
-    )
+    return render_template("reset_password.html")
 
 
 # --------------------------------------------------
@@ -911,16 +1290,6 @@ def logout():
 
     session.pop(
         "user_address",
-        None
-    )
-
-    session.pop(
-        "otp",
-        None
-    )
-
-    session.pop(
-        "otp_mobile",
         None
     )
 
@@ -1958,11 +2327,36 @@ def admin():
             "/admin-login"
         )
 
-    orders = (
-        Order.query
-        .order_by(Order.id.desc())
-        .all()
-    )
+    # Optional date-range filter for the admin sales report.
+    start_date_text = request.args.get("start_date", "").strip()
+    end_date_text = request.args.get("end_date", "").strip()
+    date_filter_error = None
+    start_date = None
+    end_date = None
+
+    try:
+        if start_date_text:
+            start_date = date.fromisoformat(start_date_text)
+        if end_date_text:
+            end_date = date.fromisoformat(end_date_text)
+        if start_date and end_date and start_date > end_date:
+            date_filter_error = "Start date must be on or before end date."
+            start_date = end_date = None
+    except ValueError:
+        date_filter_error = "Please select valid dates."
+        start_date = end_date = None
+
+    query = Order.query
+    if start_date:
+        query = query.filter(
+            Order.created_at >= datetime.combine(start_date, datetime.min.time())
+        )
+    if end_date:
+        query = query.filter(
+            Order.created_at < datetime.combine(end_date + timedelta(days=1), datetime.min.time())
+        )
+
+    orders = query.order_by(Order.id.desc()).all()
 
     for order in orders:
 
@@ -2069,7 +2463,10 @@ def admin():
         orders=orders,
         total_sales=total_sales,
         online_payment_total=online_payment_total,
-        paid_online_order_count=len(paid_online_orders)
+        paid_online_order_count=len(paid_online_orders),
+        start_date=start_date_text,
+        end_date=end_date_text,
+        date_filter_error=date_filter_error,
     )
 
 

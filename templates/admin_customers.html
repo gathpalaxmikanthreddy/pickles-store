@@ -126,6 +126,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261010-sitewide3') }}">
 </head>
 
 <body>
@@ -167,6 +168,7 @@
                         <th>Address</th>
                         <th>Registered</th>
                         <th>Total Orders</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
 
@@ -202,6 +204,11 @@
                                 {{ customer.order_count }}
                             </span>
                         </td>
+                        <td>
+    <a href="/admin/customer/{{ customer.id }}">
+        View Details
+    </a>
+</td>
                     </tr>
 
                     {% endfor %}

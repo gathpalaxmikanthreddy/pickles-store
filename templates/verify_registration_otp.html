@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>PICKELS STORE - Verify OTP</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        .otp-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 20px;
+            background: linear-gradient(135deg, #f5efe0, #fffaf2, #e9f0e6);
+        }
+
+        .otp-wrapper {
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .otp-brand {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .otp-brand .brand-icon {
+            font-size: 48px;
+        }
+
+        .otp-brand h1 {
+            margin: 5px 0;
+            color: #173d2b;
+            font-family: Georgia, serif;
+            font-size: 32px;
+        }
+
+        .otp-brand h1 span {
+            color: #c38d24;
+        }
+
+        .otp-brand p {
+            color: #737a74;
+            font-size: 14px;
+        }
+
+        .otp-card {
+            background: white;
+            border-radius: 24px;
+            padding: 35px;
+            box-shadow: 0 20px 55px rgba(23, 61, 43, 0.14);
+        }
+
+        .otp-card h2 {
+            margin: 0 0 8px;
+            text-align: center;
+            color: #173d2b;
+            font-family: Georgia, serif;
+            font-size: 27px;
+        }
+
+        .otp-subtitle {
+            text-align: center;
+            color: #777;
+            font-size: 14px;
+            margin-bottom: 28px;
+        }
+
+        .otp-error {
+            background: #fff0f0;
+            color: #b42318;
+            border: 1px solid #f3c2c2;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .otp-field {
+            margin-bottom: 20px;
+        }
+
+        .otp-field label {
+            display: block;
+            color: #24352b;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .otp-field input {
+            width: 100%;
+            box-sizing: border-box;
+            height: 55px;
+            padding: 12px;
+            border: 1px solid #dcded8;
+            border-radius: 11px;
+            background: #fbfcf9;
+            color: #24352b;
+            font-size: 25px;
+            letter-spacing: 10px;
+            text-align: center;
+            outline: none;
+        }
+
+        .otp-field input:focus {
+            background: white;
+            border-color: #c38d24;
+            box-shadow: 0 0 0 3px rgba(195, 141, 36, 0.12);
+        }
+
+        .otp-button {
+            width: 100%;
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            background: #173d2b;
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .otp-button:hover {
+            background: #285c41;
+        }
+
+        .otp-note {
+            text-align: center;
+            color: #777;
+            font-size: 12px;
+            margin-top: 16px;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #173d2b;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+        }
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261010-sitewide3') }}">
+</head>
+
+<body>
+
+<div class="otp-page">
+
+    <div class="otp-wrapper">
+
+        <div class="otp-brand">
+            <div class="brand-icon">🥭</div>
+
+            <h1>
+                PICKELS <span>STORE</span>
+            </h1>
+
+            <p>Authentic taste, delivered to your doorstep.</p>
+        </div>
+
+        <div class="otp-card">
+
+            <h2>Verify Mobile Number</h2>
+
+            <p class="otp-subtitle">
+                Enter the 6-digit OTP sent to your mobile
+            </p>
+
+            {% if error %}
+                <div class="otp-error">
+                    ⚠️ {{ error }}
+                </div>
+            {% endif %}
+
+            <form method="POST">
+
+                <div class="otp-field">
+
+                    <label for="otp">
+                        🔐 Registration OTP
+                    </label>
+
+                    <input
+                        id="otp"
+                        type="text"
+                        name="otp"
+                        placeholder="000000"
+                        maxlength="6"
+                        inputmode="numeric"
+                        pattern="[0-9]{6}"
+                        autocomplete="one-time-code"
+                        required
+                    >
+
+                </div>
+
+                <button type="submit" class="otp-button">
+                    ✅ Verify OTP
+                </button>
+
+            </form>
+
+            <div class="otp-note">
+                ⏱️ OTP is valid for 5 minutes.
+            </div>
+
+            <a href="/register" class="back-link">
+                ← Back to Registration
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,74 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
-    <title>Admin Login - PICKELS STORE</title>
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1c4935">
+    <title>Admin Sign In | PICKELS STORE</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261010-sitewide3') }}">
 </head>
+<body class="admin-login-page">
+    <main class="admin-login-layout">
+        <section class="admin-login-intro" aria-labelledby="admin-brand">
+            <a class="admin-login-brand" href="/" id="admin-brand">
+                <span aria-hidden="true">🥭</span>
+                <span>PICKELS <b>STORE</b></span>
+            </a>
+            <div class="admin-intro-copy">
+                <p class="admin-eyebrow">STORE MANAGEMENT</p>
+                <h1>Good to see you.<br><span>Your store is ready.</span></h1>
+                <p>Sign in to manage products, orders, and customer support from one secure workspace.</p>
+            </div>
+            <div class="admin-login-assurance">
+                <span aria-hidden="true">✓</span>
+                <span>Private access for authorized store administrators</span>
+            </div>
+        </section>
 
-<body>
+        <section class="admin-login-panel" aria-labelledby="admin-login-title">
+            <a class="admin-back-link" href="/">← Back to store</a>
+            <div class="admin-login-heading">
+                <span class="admin-login-icon" aria-hidden="true">↗</span>
+                <p class="admin-eyebrow">ADMIN PORTAL</p>
+                <h2 id="admin-login-title">Sign in to your workspace</h2>
+                <p>Enter your administrator credentials to continue.</p>
+            </div>
 
-<header>
+            {% if error %}
+                <div class="admin-login-error" role="alert">{{ error }}</div>
+            {% endif %}
 
-    <h1>🥭 PICKELS STORE</h1>
+            <form class="admin-login-form" method="POST">
+                <div class="admin-form-field">
+                    <label for="admin-username">Username</label>
+                    <input
+                        id="admin-username"
+                        type="text"
+                        name="username"
+                        placeholder="Enter your admin username"
+                        autocomplete="username"
+                        autocapitalize="none"
+                        required
+                        autofocus
+                    >
+                </div>
+                <div class="admin-form-field">
+                    <label for="admin-password">Password</label>
+                    <input
+                        id="admin-password"
+                        type="password"
+                        name="password"
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
+                        required
+                    >
+                </div>
+                <button class="admin-login-submit" type="submit">
+                    <span>Sign in securely</span>
+                    <span aria-hidden="true">→</span>
+                </button>
+            </form>
 
-    <p>Admin Login</p>
-
-</header>
-
-
-<main class="checkout">
-
-    <h2>🔐 Admin Login</h2>
-
-    {% if error %}
-
-        <p style="color:red;">
-            {{ error }}
-        </p>
-
-    {% endif %}
-
-
-    <form method="POST">
-
-        <label>Username</label>
-
-        <input
-            type="text"
-            name="username"
-            placeholder="Admin username"
-            required
-        >
-
-
-        <label>Password</label>
-
-        <input
-            type="password"
-            name="password"
-            placeholder="Admin password"
-            required
-        >
-
-
-        <button type="submit">
-            Login
-        </button>
-
-    </form>
-
-</main>
-
+            <p class="admin-login-footnote">
+                <span aria-hidden="true">▣</span>
+                Your session is protected. Sign out when you are finished.
+            </p>
+        </section>
+    </main>
 </body>
-
 </html>

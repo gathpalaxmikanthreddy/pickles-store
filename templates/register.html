@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>PICKELS STORE - Login</title>
+    <title>PICKELS STORE - Register</title>
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
 
     <style>
-        .login-page {
+        .register-page {
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -19,44 +19,44 @@
             background: linear-gradient(135deg, #f5efe0, #fffaf2, #e9f0e6);
         }
 
-        .login-wrapper {
+        .register-wrapper {
             width: 100%;
             max-width: 440px;
         }
 
-        .login-brand {
+        .register-brand {
             text-align: center;
             margin-bottom: 25px;
         }
 
-        .brand-icon {
+        .register-brand .brand-icon {
             font-size: 48px;
         }
 
-        .login-brand h1 {
+        .register-brand h1 {
             margin: 5px 0;
             color: #173d2b;
             font-family: Georgia, serif;
             font-size: 32px;
         }
 
-        .login-brand h1 span {
+        .register-brand h1 span {
             color: #c38d24;
         }
 
-        .login-brand p {
+        .register-brand p {
             color: #737a74;
             font-size: 14px;
         }
 
-        .login-card {
+        .register-card {
             background: white;
             border-radius: 24px;
             padding: 35px;
             box-shadow: 0 20px 55px rgba(23, 61, 43, 0.14);
         }
 
-        .login-card h2 {
+        .register-card h2 {
             margin: 0 0 8px;
             text-align: center;
             color: #173d2b;
@@ -64,14 +64,14 @@
             font-size: 27px;
         }
 
-        .login-subtitle {
+        .register-subtitle {
             text-align: center;
             color: #777;
             font-size: 14px;
             margin-bottom: 28px;
         }
 
-        .login-error {
+        .register-error {
             background: #fff0f0;
             color: #b42318;
             border: 1px solid #f3c2c2;
@@ -81,11 +81,11 @@
             text-align: center;
         }
 
-        .login-field {
-            margin-bottom: 20px;
+        .register-field {
+            margin-bottom: 18px;
         }
 
-        .login-field label {
+        .register-field label {
             display: block;
             color: #24352b;
             font-size: 13px;
@@ -93,9 +93,9 @@
             margin-bottom: 7px;
         }
 
-        .login-field input {
+        .register-field input,
+        .register-field textarea {
             width: 100%;
-            height: 48px;
             box-sizing: border-box;
             padding: 13px 14px;
             border: 1px solid #dcded8;
@@ -106,20 +106,31 @@
             outline: none;
         }
 
-        .login-field input:focus {
+        .register-field input {
+            height: 48px;
+        }
+
+        .register-field textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        .register-field input:focus,
+        .register-field textarea:focus {
             background: white;
             border-color: #c38d24;
             box-shadow: 0 0 0 3px rgba(195, 141, 36, 0.12);
         }
 
-        /* PASSWORD SHOW / HIDE */
+        /* PASSWORD SHOW/HIDE */
 
         .password-box {
             position: relative;
+            width: 100%;
         }
 
         .password-box input {
-            padding-right: 50px;
+            padding-right: 50px !important;
         }
 
         .show-password {
@@ -134,7 +145,11 @@
             padding: 5px;
         }
 
-        .login-button {
+        .show-password:hover {
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .register-button {
             width: 100%;
             border: none;
             border-radius: 12px;
@@ -144,35 +159,23 @@
             font-size: 16px;
             font-weight: 700;
             cursor: pointer;
-            margin-top: 5px;
+            transition: 0.25s ease;
         }
 
-        .login-button:hover {
+        .register-button:hover {
             background: #285c41;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(23, 61, 43, 0.18);
         }
 
-        .forgot-link {
-            display: block;
-            text-align: right;
-            margin-top: 14px;
-            color: #173d2b;
-            text-decoration: underline;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .forgot-link:hover {
-            color: #c38d24;
-        }
-
-        .security-note {
+        .otp-note {
             text-align: center;
             color: #777;
             font-size: 12px;
             margin-top: 16px;
         }
 
-        .register-link {
+        .login-link {
             display: block;
             text-align: center;
             margin-top: 20px;
@@ -182,22 +185,22 @@
             font-size: 14px;
         }
 
-        .register-link:hover {
+        .login-link:hover {
             color: #c38d24;
         }
 
-        .back-home {
-            display: block;
-            text-align: center;
-            margin-top: 18px;
-            color: #173d2b;
-            text-decoration: none;
-            font-size: 13px;
-        }
-
         @media (max-width: 500px) {
-            .login-card {
+            .register-page {
+                padding: 25px 15px;
+            }
+
+            .register-card {
                 padding: 25px 20px;
+                border-radius: 20px;
+            }
+
+            .register-brand h1 {
+                font-size: 28px;
             }
         }
     </style>
@@ -206,12 +209,12 @@
 
 <body>
 
-<div class="login-page">
+<div class="register-page">
 
-    <div class="login-wrapper">
+    <div class="register-wrapper">
 
         <!-- BRAND -->
-        <div class="login-brand">
+        <div class="register-brand">
 
             <div class="brand-icon">🥭</div>
 
@@ -226,18 +229,18 @@
         </div>
 
 
-        <!-- LOGIN CARD -->
-        <div class="login-card">
+        <!-- REGISTER CARD -->
+        <div class="register-card">
 
-            <h2>Welcome Back</h2>
+            <h2>Create Account</h2>
 
-            <p class="login-subtitle">
-                Login to your account
+            <p class="register-subtitle">
+                Register with your mobile number
             </p>
 
 
             {% if error %}
-                <div class="login-error">
+                <div class="register-error">
                     ⚠️ {{ error }}
                 </div>
             {% endif %}
@@ -245,8 +248,27 @@
 
             <form method="POST">
 
-                <!-- MOBILE NUMBER -->
-                <div class="login-field">
+                <!-- NAME -->
+                <div class="register-field">
+
+                    <label for="name">
+                        👤 Full Name
+                    </label>
+
+                    <input
+                        id="name"
+                        type="text"
+                        name="name"
+                        placeholder="Enter your full name"
+                        autocomplete="name"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- MOBILE -->
+                <div class="register-field">
 
                     <label for="mobile">
                         📱 Mobile Number
@@ -267,8 +289,26 @@
                 </div>
 
 
+                <!-- ADDRESS -->
+                <div class="register-field">
+
+                    <label for="address">
+                        📍 Delivery Address
+                    </label>
+
+                    <textarea
+                        id="address"
+                        name="address"
+                        placeholder="Enter your complete delivery address"
+                        autocomplete="street-address"
+                        required
+                    ></textarea>
+
+                </div>
+
+
                 <!-- PASSWORD -->
-                <div class="login-field">
+                <div class="register-field">
 
                     <label for="password">
                         🔑 Password
@@ -280,9 +320,9 @@
                             id="password"
                             type="password"
                             name="password"
-                            placeholder="Enter your password"
+                            placeholder="Create a password"
                             minlength="6"
-                            autocomplete="current-password"
+                            autocomplete="new-password"
                             required
                         >
 
@@ -290,6 +330,7 @@
                             type="button"
                             class="show-password"
                             onclick="togglePassword('password', this)"
+                            aria-label="Show password"
                         >
                             👁️
                         </button>
@@ -299,55 +340,83 @@
                 </div>
 
 
-                <!-- LOGIN -->
+                <!-- CONFIRM PASSWORD -->
+                <div class="register-field">
+
+                    <label for="confirm_password">
+                        🔐 Confirm Password
+                    </label>
+
+                    <div class="password-box">
+
+                        <input
+                            id="confirm_password"
+                            type="password"
+                            name="confirm_password"
+                            placeholder="Re-enter your password"
+                            minlength="6"
+                            autocomplete="new-password"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="show-password"
+                            onclick="togglePassword('confirm_password', this)"
+                            aria-label="Show confirm password"
+                        >
+                            👁️
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- REGISTER BUTTON -->
                 <button
                     type="submit"
-                    class="login-button"
+                    class="register-button"
                 >
-                    🔐 Login
+                    📱 Send OTP & Register
                 </button>
 
             </form>
 
 
-            <a href="/forgot-password" class="forgot-link">
-                Forgot Password?
-            </a>
-
-            <div class="security-note">
-                🔒 Your account is protected with password security.
+            <div class="otp-note">
+                🔒 An OTP will be sent to your mobile number.
             </div>
 
 
-            <a href="/register" class="register-link">
-                New customer? Create an account
+            <a href="/login" class="login-link">
+                Already have an account? Login
             </a>
 
         </div>
-
-
-        <a href="/" class="back-home">
-            ← Back to PICKELS STORE
-        </a>
 
     </div>
 
 </div>
 
 
+<!-- PASSWORD TOGGLE SCRIPT -->
 <script>
 function togglePassword(inputId, button) {
 
     const input = document.getElementById(inputId);
 
     if (input.type === "password") {
+
         input.type = "text";
         button.textContent = "🙈";
+
     } else {
+
         input.type = "password";
         button.textContent = "👁️";
-    }
 
+    }
 }
 </script>
 

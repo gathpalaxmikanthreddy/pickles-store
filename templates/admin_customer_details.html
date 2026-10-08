@@ -203,6 +203,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261010-sitewide3') }}">
 </head>
 
 <body>
@@ -293,6 +294,7 @@
                             <th>Items</th>
                             <th>Total</th>
                             <th>Payment</th>
+                            <th>Payment Status</th>
                             <th>Status</th>
                         </tr>
 
@@ -339,7 +341,9 @@
                             <td>
                                 {{ order.payment_method or "COD" }}
                             </td>
-
+                            <td>
+    {{ order.payment_status or "Pending" }}
+</td>
                             <td>
 
                                 {% set status_class = order.status|lower %}
@@ -375,4 +379,3 @@
 
 </body>
 </html>
-

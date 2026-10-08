@@ -19,6 +19,26 @@ function updateCartCount() {
     cartCount.textContent = total;
 }
 
+function showToast(message, type) {
+    let toast = document.getElementById("app-toast");
+
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "app-toast";
+        toast.setAttribute("role", "status");
+        toast.setAttribute("aria-live", "polite");
+        toast.setAttribute("aria-atomic", "true");
+        document.body.appendChild(toast);
+    }
+
+    window.clearTimeout(toast.hideTimer);
+    toast.className = "app-toast is-visible" + (type === "error" ? " is-error" : "");
+    toast.textContent = message;
+    toast.hideTimer = window.setTimeout(function() {
+        toast.classList.remove("is-visible");
+    }, 3000);
+}
+
 
 /* =========================================
 SAVE CART
@@ -42,7 +62,7 @@ function addToCart(name, price, image, stock) {
     });
 
     if (stock <= 0) {
-        alert(name + " is currently out of stock.");
+        showToast(name + " is currently out of stock.", "error");
         return;
     }
 
@@ -50,12 +70,13 @@ function addToCart(name, price, image, stock) {
         const currentQuantity = Number(existingItem.quantity) || 0;
 
         if (currentQuantity >= stock) {
-            alert(
+            showToast(
                 "Only " +
                 stock +
                 " unit(s) of " +
                 name +
-                " are available."
+                " are available.",
+                "error"
             );
             return;
         }
@@ -74,7 +95,7 @@ function addToCart(name, price, image, stock) {
 
     saveCart();
 
-    alert(name + " added to cart!");
+    showToast(name + " added to cart.");
 }
 
 
