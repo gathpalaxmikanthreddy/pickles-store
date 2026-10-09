@@ -235,7 +235,7 @@
 
 </style>
 
-<link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261010-sitewide3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional1') }}">
 </head>
 
 <body>
@@ -425,7 +425,7 @@
     <button
         type="button"
         class="print-btn"
-        onclick="window.print()"
+        data-print
     >
         🖨️ Print Invoice
     </button>
@@ -434,5 +434,6 @@
 
 </div>
 
+<script src="{{ url_for('static', filename='security-ui.js') }}"></script>
 </body>
 </html>

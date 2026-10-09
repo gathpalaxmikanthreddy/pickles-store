@@ -53,7 +53,6 @@
     }
 
     .no-products {
-        display: none;
         text-align: center;
         padding: 30px;
         color: #777;
@@ -61,6 +60,10 @@
         border-radius: 12px;
         margin: 20px auto;
         max-width: 600px;
+    }
+
+    .no-products[hidden] {
+        display: none;
     }
 
     /* =========================
@@ -424,8 +427,9 @@
         color: #74796e;
     }
 
-    .storefront-home .search-container {
-        margin-bottom: 38px;
+    .storefront-home .products-grid {
+        align-items: stretch;
+        grid-auto-rows: 1fr;
     }
 
     .storefront-home .search-box {
@@ -441,6 +445,9 @@
     }
 
     .storefront-home .product-card {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
         isolation: isolate;
         border: 1px solid rgba(69, 78, 54, 0.11);
         border-radius: 22px;
@@ -457,7 +464,8 @@
     }
 
     .storefront-home .product-image {
-        height: 310px;
+        height: 250px;
+        flex: 0 0 auto;
         margin: 10px 10px 0;
         width: calc(100% - 20px);
         padding: 10px;
@@ -502,6 +510,9 @@
     }
 
     .storefront-home .product-info {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
         padding: 18px 21px 21px;
     }
 
@@ -512,10 +523,14 @@
     }
 
     .storefront-home .product-description {
-        min-height: 45px;
+        min-height: 42px;
         color: #7a7d74;
         font-size: 13px;
         line-height: 1.65;
+    }
+
+    .storefront-home .stock-status {
+        margin-top: auto;
     }
 
     .storefront-home .product-price {
@@ -538,7 +553,9 @@
     }
 
     .storefront-home .add-btn {
+        width: 100%;
         min-width: 112px;
+        margin-top: 8px;
         padding: 11px 18px;
         border: 1px solid rgba(255, 255, 255, 0.17);
         border-radius: 11px;
@@ -625,7 +642,7 @@
         }
 
         .storefront-home .product-image {
-            height: 285px;
+            height: 235px;
         }
     }
 
@@ -646,7 +663,7 @@
         }
 
         .storefront-home .product-image {
-            height: 300px;
+            height: 260px;
         }
 
         .storefront-home .product-card:hover {
@@ -668,7 +685,10 @@
     }
 </style>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261010-sitewide3') }}">
+    <link rel="stylesheet"     href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional4') }}">
+    {% if products %}
+        <link rel="preload" as="image" href="{{ url_for('static', filename='images/' + products[0].image) }}">
+    {% endif %}
 </head>
 
 <body class="storefront-home">
@@ -691,9 +711,12 @@
         aria-controls="storefront-navigation"
         aria-label="Open navigation menu"
     >
-        <span></span>
-        <span></span>
-        <span></span>
+        <span class="nav-toggle-icon" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+        </span>
+        <span class="nav-toggle-label">Menu</span>
     </button>
 
     <nav class="storefront-navigation" id="storefront-navigation" aria-label="Main navigation">
@@ -716,7 +739,7 @@
             <details class="nav-dropdown">
                 <summary>
                     {% if session.get("user_mobile") %}
-                        👤 {{ session.get("user_name", "My Account") }}
+                        👤 {{ customer.name if customer else "My Account" }}
                     {% else %}
                         Account
                     {% endif %}
@@ -825,36 +848,48 @@
 
     <!-- SEARCH -->
 
-    <div class="search-container" role="search" aria-label="Search products">
-        <label class="visually-hidden" for="product-search">Search products</label>
-        <span class="search-icon" aria-hidden="true">⌕</span>
-        <input
-            type="search"
-            id="product-search"
-            class="search-box"
-            placeholder="Search pickles, ingredients, flavours..."
-            autocomplete="off"
-            aria-controls="products-grid"
-            aria-describedby="product-search-status"
-        >
-        <button
-            type="button"
-            class="search-submit"
-            id="product-search-submit"
-            aria-label="Search products"
-        >
-            <span aria-hidden="true">⌕</span>
-            <span>Search</span>
-        </button>
-        <button
-            type="button"
-            class="search-clear"
-            id="product-search-clear"
-            aria-label="Clear product search"
-            hidden
-        >×</button>
+    <div class="product-tools">
+        <div class="search-container" role="search" aria-label="Search products">
+            <label class="visually-hidden" for="product-search">Search products</label>
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input
+                type="search"
+                id="product-search"
+                class="search-box"
+                placeholder="Search pickles, ingredients, flavours..."
+                autocomplete="off"
+                aria-controls="products-grid"
+                aria-describedby="product-search-status"
+            >
+            <button
+                type="button"
+                class="search-submit"
+                id="product-search-submit"
+                aria-label="Search products"
+            >
+                <span aria-hidden="true">⌕</span>
+                <span>Search</span>
+            </button>
+            <button
+                type="button"
+                class="search-clear"
+                id="product-search-clear"
+                aria-label="Clear product search"
+                hidden
+            >×</button>
+        </div>
+
+        <label class="availability-filter" for="product-availability">
+            <span>Availability</span>
+            <select id="product-availability" aria-controls="products-grid">
+                <option value="all">All products</option>
+                <option value="in-stock">In stock</option>
+                <option value="low-stock">Almost gone</option>
+                <option value="out-of-stock">Sold out</option>
+            </select>
+        </label>
     </div>
-    <p class="search-status" id="product-search-status" role="status" aria-live="polite"></p>
+    <p class="search-status" id="product-search-status" role="status" aria-live="polite" aria-atomic="true"></p>
 
 
     <!-- PRODUCTS GRID -->
@@ -869,6 +904,7 @@
         <div
             class="product-card"
             data-product-name="{{ (product.name ~ ' ' ~ (product.description or '') ~ ' ' ~ product.unit)|lower }}"
+            data-stock-filter="{% if product.stock <= 0 %}out-of-stock{% elif product.stock <= 5 %}low-stock{% else %}in-stock{% endif %}"
         >
 
             <!-- PRODUCT IMAGE -->
@@ -884,6 +920,7 @@
                         src="{{ url_for('static', filename='images/' + product.image) }}"
                         alt="{{ product.name }}"
                         loading="lazy"
+                        decoding="async"
                     >
 
                     <span class="product-image-badge">
@@ -1015,7 +1052,7 @@
         </h3>
 
         <p>
-            Try searching for another pickle.
+            Try another search or choose “All products” in the availability filter.
         </p>
 
     </div>
@@ -1250,10 +1287,10 @@
 ========================= -->
 
 <script
-    src="{{ url_for('static', filename='script.js', v='20261009-toast') }}"
+    src="{{ url_for('static', filename='script.js', v='20261010-checkout2') }}"
 ></script>
 
-<script>
+<script nonce="{{ g.csp_nonce }}">
     (() => {
         const toggle = document.querySelector(".nav-toggle");
         const navigation = document.getElementById("storefront-navigation");
@@ -1263,14 +1300,27 @@
         const closeMenu = () => {
             toggle.setAttribute("aria-expanded", "false");
             toggle.setAttribute("aria-label", "Open navigation menu");
+            toggle.querySelector(".nav-toggle-label").textContent = "Menu";
             navigation.classList.remove("is-open");
+            navigation.querySelectorAll(".nav-dropdown[open]").forEach((dropdown) => {
+                dropdown.open = false;
+            });
         };
 
         toggle.addEventListener("click", () => {
             const isOpen = toggle.getAttribute("aria-expanded") === "true";
             toggle.setAttribute("aria-expanded", String(!isOpen));
             toggle.setAttribute("aria-label", isOpen ? "Open navigation menu" : "Close navigation menu");
+            toggle.querySelector(".nav-toggle-label").textContent = isOpen ? "Menu" : "Close";
             navigation.classList.toggle("is-open", !isOpen);
+        });
+
+        document.addEventListener("pointerdown", (event) => {
+            if (!event.target.closest(".storefront-navbar")) closeMenu();
+        });
+
+        window.addEventListener("resize", () => {
+            if (window.matchMedia("(min-width: 681px)").matches) closeMenu();
         });
 
         navigation.addEventListener("click", (event) => {
@@ -1280,9 +1330,7 @@
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape") {
                 closeMenu();
-                navigation.querySelectorAll(".nav-dropdown[open]").forEach((dropdown) => {
-                    dropdown.open = false;
-                });
+                toggle.focus();
             }
         });
     })();
@@ -1293,7 +1341,7 @@
      PRODUCT SEARCH + CART
 ========================= -->
 
-<script>
+<script nonce="{{ g.csp_nonce }}">
 
     document.addEventListener(
         "DOMContentLoaded",
@@ -1333,27 +1381,47 @@
                     "product-search-status"
                 );
 
+            const availabilityFilter =
+                document.getElementById(
+                    "product-availability"
+                );
+
+            const normalizeSearchText = function(value) {
+                return value
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .toLowerCase()
+                    .trim()
+                    .replace(/\s+/g, " ");
+            };
+
             const updateProductSearch = function() {
-                const searchText = searchInput.value.trim().toLowerCase();
+                const searchText = normalizeSearchText(searchInput.value);
+                const searchTerms = searchText ? searchText.split(" ") : [];
+                const selectedAvailability = availabilityFilter.value;
                 let visibleProducts = 0;
 
                 productCards.forEach(function(card) {
-                    const productDetails =
-                        card.getAttribute("data-product-name") || "";
-                    const isVisible = productDetails.includes(searchText);
+                    const productDetails = normalizeSearchText(
+                        card.getAttribute("data-product-name") || ""
+                    );
+                    const matchesSearch = searchTerms.every(function(term) {
+                        return productDetails.includes(term);
+                    });
+                    const matchesAvailability =
+                        selectedAvailability === "all"
+                        || card.dataset.stockFilter === selectedAvailability;
+                    const isVisible = matchesSearch && matchesAvailability;
 
                     card.style.display = isVisible ? "" : "none";
                     if (isVisible) visibleProducts++;
                 });
 
-                noProducts.style.display =
-                    visibleProducts === 0 && searchText !== ""
-                        ? "block"
-                        : "none";
+                noProducts.hidden = visibleProducts !== 0;
                 searchClear.hidden = searchText === "";
                 searchStatus.textContent = searchText
-                    ? `${visibleProducts} ${visibleProducts === 1 ? "product" : "products"} found`
-                    : `Showing all ${productCards.length} ${productCards.length === 1 ? "product" : "products"}`;
+                    ? `${visibleProducts} ${visibleProducts === 1 ? "product" : "products"} match your search`
+                    : `Showing ${visibleProducts} of ${productCards.length} ${productCards.length === 1 ? "product" : "products"}`;
             };
 
             if (searchInput) {
@@ -1371,6 +1439,18 @@
                 searchSubmit.addEventListener("click", function() {
                     updateProductSearch();
                     searchInput.focus();
+                });
+
+                availabilityFilter.addEventListener(
+                    "change",
+                    updateProductSearch
+                );
+
+                searchInput.addEventListener("keydown", function(event) {
+                    if (event.key === "Enter") {
+                        event.preventDefault();
+                        updateProductSearch();
+                    }
                 });
 
                 updateProductSearch();

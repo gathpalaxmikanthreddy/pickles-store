@@ -197,7 +197,7 @@
 
     </style>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261010-sitewide3') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional1') }}">
 </head>
 
 
@@ -352,7 +352,7 @@
                                             filename='images/' + item.image
                                         ) }}"
                                         alt="{{ item.name }}"
-                                        onerror="this.style.display='none';"
+                                        data-hide-on-error
                                     >
 
                                 {% else %}
@@ -462,8 +462,9 @@
                             method="POST"
                             action="/cancel-order/{{ order.id }}"
                             style="display: inline;"
-                            onsubmit="return confirm('Are you sure you want to cancel Order #{{ order.id }}?');"
+                            data-confirm-message="Are you sure you want to cancel Order #{{ order.id }}?"
                         >
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                             <button
                                 type="submit"
@@ -512,6 +513,7 @@
 </main>
 
 
+<script src="{{ url_for('static', filename='security-ui.js') }}"></script>
 </body>
 
 </html>

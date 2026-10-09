@@ -204,7 +204,7 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261010-sitewide3') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional1') }}">
 </head>
 
 <body>
@@ -247,6 +247,7 @@
 
 
             <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                 <!-- NAME -->
                 <div class="register-field">
@@ -329,7 +330,7 @@
                         <button
                             type="button"
                             class="show-password"
-                            onclick="togglePassword('password', this)"
+                            data-toggle-password="password"
                             aria-label="Show password"
                         >
                             👁️
@@ -362,7 +363,7 @@
                         <button
                             type="button"
                             class="show-password"
-                            onclick="togglePassword('confirm_password', this)"
+                            data-toggle-password="confirm_password"
                             aria-label="Show confirm password"
                         >
                             👁️
@@ -400,25 +401,7 @@
 </div>
 
 
-<!-- PASSWORD TOGGLE SCRIPT -->
-<script>
-function togglePassword(inputId, button) {
-
-    const input = document.getElementById(inputId);
-
-    if (input.type === "password") {
-
-        input.type = "text";
-        button.textContent = "🙈";
-
-    } else {
-
-        input.type = "password";
-        button.textContent = "👁️";
-
-    }
-}
-</script>
+<script src="{{ url_for('static', filename='security-ui.js') }}"></script>
 
 </body>
 </html>

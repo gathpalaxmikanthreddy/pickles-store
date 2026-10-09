@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#1c4935">
     <title>Admin Sign In | PICKELS STORE</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261010-sitewide3') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional1') }}">
 </head>
 <body class="admin-login-page">
     <main class="admin-login-layout">
@@ -40,6 +40,7 @@
             {% endif %}
 
             <form class="admin-login-form" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="admin-form-field">
                     <label for="admin-username">Username</label>
                     <input

@@ -556,7 +556,7 @@
 
     </style>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261010-sitewide3') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional1') }}">
 </head>
 
 
@@ -621,7 +621,7 @@
                 <button
                     type="button"
                     class="checkout-btn"
-                    onclick="checkout()"
+                    data-checkout
                 >
                     Proceed to Checkout →
                 </button>
@@ -650,6 +650,7 @@
 <script
     src="{{ url_for('static', filename='script.js') }}"
 ></script>
+<script src="{{ url_for('static', filename='security-ui.js') }}"></script>
 
 </body>
 

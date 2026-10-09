@@ -446,7 +446,7 @@
 
     </style>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261010-sitewide3') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional1') }}">
 </head>
 
 
@@ -515,7 +515,7 @@
             </div>
 
             <h2>
-                {{ session.get("user_name", "Customer") }}
+                {{ customer.name }}
             </h2>
 
             <p>
@@ -545,7 +545,7 @@
             </span>
 
             <span class="info-value">
-                {{ session.get("user_name", "Not available") }}
+                {{ customer.name }}
             </span>
 
         </div>
@@ -558,7 +558,7 @@
             </span>
 
             <span class="info-value">
-                {{ session.get("user_address", "Not available") }}
+                {{ customer.address or "Not available" }}
             </span>
 
         </div>
@@ -636,6 +636,7 @@
             method="POST"
             action="/update-address"
         >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <label for="address">
                 Delivery Address
@@ -646,7 +647,7 @@
                 name="address"
                 placeholder="Enter your complete delivery address"
                 required
-            >{{ session.get("user_address", "") }}</textarea>
+            >{{ customer.address or "" }}</textarea>
 
 
             <button

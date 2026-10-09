@@ -126,7 +126,7 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261010-sitewide3') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional1') }}">
 </head>
 
 <body>
@@ -146,7 +146,7 @@
         type="text"
         id="customerSearch"
         placeholder="🔎 Search by name or mobile number..."
-        onkeyup="searchCustomers()"
+        data-search-table="#customersTable"
     >
 </div>
 
@@ -229,27 +229,6 @@
 
     </div>
 
-    <script>
-function searchCustomers() {
-    const search = document
-        .getElementById("customerSearch")
-        .value
-        .toLowerCase();
-
-    const rows = document.querySelectorAll(
-        "#customersTable tbody tr"
-    );
-
-    rows.forEach(function(row) {
-        const text = row.innerText.toLowerCase();
-
-        if (text.includes(search)) {
-            row.style.display = "";
-        } else {
-            row.style.display = "none";
-        }
-    });
-}
-</script>
+    <script src="{{ url_for('static', filename='security-ui.js') }}"></script>
 </body>
 </html>

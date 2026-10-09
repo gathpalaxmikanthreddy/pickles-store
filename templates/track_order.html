@@ -142,7 +142,7 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261010-sitewide3') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional1') }}">
 </head>
 
 <body>
@@ -157,6 +157,7 @@
     <div class="tracking-card">
 
         <h2>📦 Track Order</h2>
+        <p>Sign in to view orders placed with your account.</p>
 
         {% if error %}
             <p style="color: red;">
@@ -165,6 +166,7 @@
         {% endif %}
 
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <label>Order ID</label>
 
@@ -172,17 +174,6 @@
                 type="number"
                 name="order_id"
                 placeholder="Example: 1"
-                required
-            >
-
-            <label>Mobile Number</label>
-
-            <input
-                type="tel"
-                name="mobile"
-                value="{{ session.get('user_mobile', '') }}"
-                placeholder="Enter your mobile number"
-                maxlength="10"
                 required
             >
 
@@ -251,48 +242,50 @@
             </div>
 
 
-            <!-- TIMELINE -->
+            {% if order.status != "Cancelled" %}
+                <!-- TIMELINE -->
 
-            {% set statuses = ["Pending", "Confirmed", "Shipped", "Delivered"] %}
-            {% set current_index = statuses.index(order.status) if order.status in statuses else 0 %}
+                {% set statuses = ["Pending", "Confirmed", "Shipped", "Delivered"] %}
+                {% set current_index = statuses.index(order.status) if order.status in statuses else 0 %}
 
-            <div class="timeline">
+                <div class="timeline">
 
-                {% for status in statuses %}
+                    {% for status in statuses %}
 
-                    <div class="step
-                        {% if loop.index0 < current_index %}
-                            completed
-                        {% elif loop.index0 == current_index %}
-                            current
-                        {% endif %}
-                    ">
-
-                        <div class="circle">
-
+                        <div class="step
                             {% if loop.index0 < current_index %}
-                                ✓
-                            {% elif status == "Pending" %}
-                                🕐
-                            {% elif status == "Confirmed" %}
-                                ✓
-                            {% elif status == "Shipped" %}
-                                🚚
-                            {% elif status == "Delivered" %}
-                                🏠
+                                completed
+                            {% elif loop.index0 == current_index %}
+                                current
                             {% endif %}
+                        ">
+
+                            <div class="circle">
+
+                                {% if loop.index0 < current_index %}
+                                    ✓
+                                {% elif status == "Pending" %}
+                                    🕐
+                                {% elif status == "Confirmed" %}
+                                    ✓
+                                {% elif status == "Shipped" %}
+                                    🚚
+                                {% elif status == "Delivered" %}
+                                    🏠
+                                {% endif %}
+
+                            </div>
+
+                            <div class="step-label">
+                                {{ status }}
+                            </div>
 
                         </div>
 
-                        <div class="step-label">
-                            {{ status }}
-                        </div>
+                    {% endfor %}
 
-                    </div>
-
-                {% endfor %}
-
-            </div>
+                </div>
+            {% endif %}
 
 
             <!-- STATUS MESSAGE -->
@@ -337,7 +330,7 @@
                     <h3>❌ Order Cancelled</h3>
 
                     <p>
-                        This order has been cancelled.
+                        This order has been cancelled and is no longer in progress.
                     </p>
 
                 {% endif %}

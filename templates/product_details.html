@@ -370,7 +370,7 @@
     }
 </style>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261010-sitewide3') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional1') }}">
 </head>
 
 <body>
@@ -581,6 +581,7 @@
                     method="POST"
                     action="/product/{{ product.id }}/review"
                 >
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                     <label>
                         Rating
@@ -735,7 +736,7 @@
 <script src="{{ url_for('static', filename='script.js') }}"></script>
 
 
-<script>
+<script nonce="{{ g.csp_nonce }}">
 
     const addButton =
         document.getElementById("add-product");

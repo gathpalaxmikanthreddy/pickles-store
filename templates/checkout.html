@@ -5,12 +5,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>Checkout - PICKELS STORE</title>
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261010-sitewide3') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional1') }}">
 </head>
 
 <body>
@@ -37,6 +38,7 @@
 
 
         <form id="checkout-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
 
             <!-- NAME -->
@@ -49,7 +51,7 @@
                 <input
                     type="text"
                     id="name"
-                    value="{{ session.get('user_name', '') }}"
+                    value="{{ customer.name }}"
                     placeholder="Enter your full name"
                     autocomplete="name"
                     required
@@ -94,7 +96,7 @@
                     rows="5"
                     autocomplete="street-address"
                     required
-                >{{ session.get('user_address', '') }}</textarea>
+                >{{ customer.address or '' }}</textarea>
 
                 <small>
                     You can change your delivery address here.
@@ -108,6 +110,9 @@
 
                 <h2>💳 Payment Method</h2>
 
+                <p class="payment-intro">
+                    Choose how you’d like to pay for this order.
+                </p>
 
                 <!-- COD -->
                 <label class="payment-option">
@@ -123,7 +128,7 @@
                         <strong>💵 Cash on Delivery</strong>
 
                         <small>
-                            Pay when your order arrives
+                            Pay the delivery person when your order arrives.
                         </small>
                     </span>
 
@@ -143,11 +148,15 @@
                         <strong>💳 Online Payment</strong>
 
                         <small>
-                            Pay securely using UPI, Card or Net Banking
+                            Pay now using UPI, card, or net banking through Razorpay.
                         </small>
                     </span>
 
                 </label>
+
+                <p class="payment-choice-note" id="payment-choice-note" role="status" aria-live="polite">
+                    No online payment is taken now. Pay cash when your order is delivered.
+                </p>
 
             </div>
 
@@ -157,7 +166,8 @@
                 type="submit"
                 class="place-order-btn"
             >
-                🛍️ Place Order
+                <span aria-hidden="true">🛍️</span>
+                <span id="checkout-submit-label">Place COD order</span>
             </button>
 
 
@@ -189,8 +199,9 @@
         </div>
 
 
-        <div class="secure-message">
-            🔒 Your payment and order information are securely processed.
+        <div class="secure-message" id="checkout-payment-summary">
+            <strong id="checkout-payment-title">Cash on Delivery</strong>
+            <span id="checkout-payment-description">Pay when your order arrives. Nothing is charged online now.</span>
         </div>
 
     </section>
@@ -206,7 +217,7 @@
 
 
 <!-- YOUR SCRIPT -->
-<script src="{{ url_for('static', filename='script.js') }}"></script>
+<script src="{{ url_for('static', filename='script.js', v='20261010-checkout2') }}"></script>
 
 
 </body>

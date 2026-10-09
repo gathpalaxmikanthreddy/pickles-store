@@ -1,18 +1,24 @@
 ﻿import os
 import json
 import random
-import time
+import hashlib
+import hmac
+import secrets
 from datetime import date, datetime, timedelta
 from uuid import uuid4
 
 import requests
 import razorpay
 from dotenv import load_dotenv
-from flask import Flask, jsonify, redirect, render_template, request, session
+from flask import Flask, flash, g, jsonify, redirect, render_template, request, session
 from flask_sqlalchemy import SQLAlchemy
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import CSRFProtect
 from sqlalchemy import inspect, text
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 load_dotenv()
 
@@ -21,6 +27,15 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
 if not app.secret_key:
     raise RuntimeError("SECRET_KEY must be set before starting the application.")
+
+APP_ENV = os.getenv("APP_ENV", "development").strip().lower()
+IS_PRODUCTION = APP_ENV == "production"
+try:
+    trusted_proxy_hops = int(os.getenv("TRUSTED_PROXY_HOPS", "0"))
+except ValueError as exc:
+    raise RuntimeError("TRUSTED_PROXY_HOPS must be a non-negative integer.") from exc
+if trusted_proxy_hops < 0:
+    raise RuntimeError("TRUSTED_PROXY_HOPS must be a non-negative integer.")
 
 database_url = os.getenv("DATABASE_URL", "sqlite:///pickels_store.db")
 
@@ -35,9 +50,103 @@ elif database_url.startswith("postgresql://"):
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SESSION_COOKIE_SECURE"] = os.getenv("SESSION_COOKIE_SECURE", "0") == "1"
+app.config["SESSION_COOKIE_SECURE"] = (
+    IS_PRODUCTION or os.getenv("SESSION_COOKIE_SECURE", "0") == "1"
+)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
+
+if IS_PRODUCTION:
+    required_production_settings = (
+        "ADMIN_USERNAME",
+        "ADMIN_PASSWORD",
+        "DATABASE_URL",
+        "RAZORPAY_KEY_ID",
+        "RAZORPAY_KEY_SECRET",
+        "RATELIMIT_STORAGE_URI",
+        "TEXTBEE_API_KEY",
+        "TEXTBEE_DEVICE_ID",
+        "TRUSTED_PROXY_HOPS",
+    )
+    missing_production_settings = [
+        key for key in required_production_settings if not os.getenv(key)
+    ]
+    if missing_production_settings:
+        raise RuntimeError(
+            "Missing required production settings: "
+            + ", ".join(missing_production_settings)
+        )
+    if len(app.secret_key) < 32:
+        raise RuntimeError("Production SECRET_KEY must be at least 32 characters.")
+    if os.getenv("ADMIN_USERNAME", "").strip().lower() == "admin":
+        raise RuntimeError("Production ADMIN_USERNAME must not be the default value.")
+    if os.getenv("ADMIN_PASSWORD", "").strip() in {
+        "use-a-strong-unique-password",
+        "password",
+        "admin",
+    }:
+        raise RuntimeError("Production ADMIN_PASSWORD must be changed from its default.")
+    if database_url.startswith("sqlite:"):
+        raise RuntimeError("Production DATABASE_URL must use PostgreSQL.")
+    if os.getenv("RATELIMIT_STORAGE_URI", "").startswith("memory://"):
+        raise RuntimeError("Production rate limits require shared Redis storage.")
+    if trusted_proxy_hops < 1:
+        raise RuntimeError("Production TRUSTED_PROXY_HOPS must match the trusted HTTPS proxy chain.")
+
+@app.before_request
+def assign_csp_nonce():
+    g.csp_nonce = secrets.token_urlsafe(16)
+
+
+csrf = CSRFProtect(app)
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    storage_uri=os.getenv("RATELIMIT_STORAGE_URI", "memory://"),
+    headers_enabled=True,
+)
+
+
+@app.after_request
+def add_security_headers(response):
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault(
+        "Permissions-Policy",
+        "camera=(), microphone=(), geolocation=()",
+    )
+    response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin-allow-popups")
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; "
+        "base-uri 'self'; "
+        "object-src 'none'; "
+        "frame-ancestors 'none'; "
+        "form-action 'self' https://api.razorpay.com https://checkout.razorpay.com; "
+        f"script-src 'self' 'nonce-{g.csp_nonce}' https://checkout.razorpay.com; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: https:; "
+        "font-src 'self' data:; "
+        "connect-src 'self' https://api.razorpay.com https://checkout.razorpay.com; "
+        "frame-src https://api.razorpay.com https://checkout.razorpay.com",
+    )
+    if app.config.get("APP_ENV") == "production":
+        response.headers.setdefault(
+            "Strict-Transport-Security",
+            "max-age=31536000",
+        )
+    return response
+
+
+app.config["APP_ENV"] = APP_ENV
+if trusted_proxy_hops:
+    app.wsgi_app = ProxyFix(
+        app.wsgi_app,
+        x_for=trusted_proxy_hops,
+        x_proto=trusted_proxy_hops,
+    )
 
 # --------------------------------------------------
 # IMAGE UPLOAD SETTINGS
@@ -60,6 +169,61 @@ app.config["MAX_CONTENT_LENGTH"] = MAX_IMAGE_SIZE
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 db = SQLAlchemy(app)
+
+
+def otp_digest(otp):
+    return hmac.new(
+        app.secret_key.encode("utf-8"),
+        otp.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def clear_otp_session(purpose):
+    keys = {
+        "register": (
+            "register_challenge_id",
+            "register_otp",
+            "register_otp_mobile",
+            "register_name",
+            "register_address",
+            "register_password",
+            "register_otp_expires",
+            "register_otp_attempts",
+        ),
+        "reset": (
+            "reset_challenge_id",
+            "reset_otp",
+            "reset_otp_mobile",
+            "reset_otp_expires",
+            "reset_otp_attempts",
+            "reset_otp_verified",
+        ),
+    }
+
+    for key in keys[purpose]:
+        session.pop(key, None)
+
+
+@app.before_request
+def discard_legacy_otp_session_data():
+    for key in (
+        "register_otp",
+        "register_otp_mobile",
+        "register_name",
+        "register_address",
+        "register_password",
+        "register_otp_expires",
+        "register_otp_attempts",
+        "reset_otp",
+        "reset_otp_mobile",
+        "reset_otp_expires",
+        "reset_otp_attempts",
+        "reset_otp_verified",
+        "user_name",
+        "user_address",
+    ):
+        session.pop(key, None)
 
 
 # --------------------------------------------------
@@ -177,6 +341,19 @@ class Customer(db.Model):
         default=db.func.current_timestamp(),
         onupdate=db.func.current_timestamp(),
     )
+
+
+class OTPChallenge(db.Model):
+    id = db.Column(db.String(64), primary_key=True)
+    purpose = db.Column(db.String(20), nullable=False)
+    mobile = db.Column(db.String(20), nullable=False)
+    otp_digest = db.Column(db.String(64), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    attempts = db.Column(db.Integer, nullable=False, default=0)
+    verified = db.Column(db.Boolean, nullable=False, default=False)
+    registration_name = db.Column(db.String(100), nullable=True)
+    registration_address = db.Column(db.Text, nullable=True)
+    registration_password = db.Column(db.String(255), nullable=True)
 
 
 class Product(db.Model):
@@ -307,6 +484,11 @@ class Order(db.Model):
         default="Pending"
     )
 
+    payment_recorded_at = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
     razorpay_order_id = db.Column(
         db.String(100),
         nullable=True,
@@ -372,6 +554,17 @@ with app.app_context():
                     'ALTER TABLE "order" '
                     "ADD COLUMN payment_status "
                     "VARCHAR(30) DEFAULT 'Pending'"
+                )
+            )
+
+    if "payment_recorded_at" not in order_columns:
+
+        with db.engine.begin() as connection:
+
+            connection.execute(
+                text(
+                    'ALTER TABLE "order" '
+                    "ADD COLUMN payment_recorded_at TIMESTAMP"
                 )
             )
 
@@ -458,11 +651,10 @@ def format_mobile(phone_number):
 def send_sms(phone, message):
     """Send an SMS through TextBee."""
     if not TEXTBEE_API_KEY:
-        print("TEXTBEE ERROR: API key not configured")
+        app.logger.error("SMS provider is not configured.")
         return False
 
     if not phone:
-        print("TEXTBEE ERROR: phone number missing")
         return False
 
     try:
@@ -486,13 +678,16 @@ def send_sms(phone, message):
             timeout=15,
         )
 
-        print("TEXTBEE STATUS:", response.status_code)
-        print("TEXTBEE RESPONSE:", response.text)
+        if not 200 <= response.status_code < 300:
+            app.logger.warning(
+                "SMS provider returned HTTP %s.",
+                response.status_code,
+            )
 
         return 200 <= response.status_code < 300
 
     except requests.RequestException as exc:
-        print("TEXTBEE ERROR:", exc)
+        app.logger.error("SMS delivery failed (%s).", type(exc).__name__)
         return False
 
 
@@ -509,10 +704,16 @@ def home():
         .order_by(Product.id.asc())
         .all()
     )
+    customer = None
+    if session.get("user_mobile"):
+        customer = Customer.query.filter_by(
+            mobile=session["user_mobile"]
+        ).first()
 
     return render_template(
         "index.html",
-        products=products
+        products=products,
+        customer=customer,
     )
 
 
@@ -565,6 +766,7 @@ def product_details(product_id):
     "/product/<int:product_id>/review",
     methods=["POST"]
 )
+@limiter.limit("5 per hour")
 def add_review(product_id):
 
     if not session.get("user_mobile"):
@@ -649,6 +851,7 @@ def cart():
     "/register",
     methods=["GET", "POST"]
 )
+@limiter.limit("5 per hour", methods=["POST"])
 def register():
 
     if request.method == "POST":
@@ -710,17 +913,31 @@ def register():
                 error="This mobile number is already registered. Please login."
             )
 
-        otp = str(
-            random.randint(100000, 999999)
+        old_challenge_id = session.get("register_challenge_id")
+        clear_otp_session("register")
+        old_challenge = (
+            db.session.get(OTPChallenge, old_challenge_id)
+            if old_challenge_id
+            else None
         )
+        if old_challenge:
+            db.session.delete(old_challenge)
 
-        session["register_otp"] = otp
-        session["register_otp_mobile"] = mobile
-        session["register_name"] = name
-        session["register_address"] = address
-        session["register_password"] = generate_password_hash(password)
-        session["register_otp_expires"] = time.time() + 300
-        session["register_otp_attempts"] = 0
+        otp = str(secrets.randbelow(900000) + 100000)
+        challenge_id = secrets.token_urlsafe(32)
+        challenge = OTPChallenge(
+            id=challenge_id,
+            purpose="register",
+            mobile=mobile,
+            otp_digest=otp_digest(otp),
+            expires_at=datetime.now() + timedelta(minutes=5),
+            registration_name=name,
+            registration_address=address,
+            registration_password=generate_password_hash(password),
+        )
+        db.session.add(challenge)
+        db.session.commit()
+        session["register_challenge_id"] = challenge_id
 
         message = (
             f"Your PICKELS STORE registration OTP is {otp}. "
@@ -728,16 +945,9 @@ def register():
         )
 
         if not send_sms("+91" + mobile, message):
-            for key in [
-                "register_otp",
-                "register_otp_mobile",
-                "register_name",
-                "register_address",
-                "register_password",
-                "register_otp_expires",
-                "register_otp_attempts",
-            ]:
-                session.pop(key, None)
+            db.session.delete(challenge)
+            db.session.commit()
+            clear_otp_session("register")
 
             return render_template(
                 "register.html",
@@ -757,17 +967,25 @@ def register():
     "/verify-registration-otp",
     methods=["GET", "POST"]
 )
+@limiter.limit("10 per 10 minutes", methods=["POST"])
 def verify_registration_otp():
 
-    if not session.get("register_otp"):
+    challenge_id = session.get("register_challenge_id")
+    challenge = (
+        db.session.get(OTPChallenge, challenge_id)
+        if challenge_id
+        else None
+    )
+    if not challenge or challenge.purpose != "register":
+        clear_otp_session("register")
         return redirect("/register")
 
     if request.method == "POST":
 
-        if time.time() > session.get(
-            "register_otp_expires",
-            0
-        ):
+        if datetime.now() >= challenge.expires_at:
+            db.session.delete(challenge)
+            db.session.commit()
+            clear_otp_session("register")
             return render_template(
                 "verify_registration_otp.html",
                 error="OTP expired. Please register again."
@@ -778,41 +996,35 @@ def verify_registration_otp():
             ""
         ).strip()
 
-        attempts = session.get(
-            "register_otp_attempts",
-            0
-        )
-
-        if attempts >= 5:
+        if challenge.attempts >= 5:
+            db.session.delete(challenge)
+            db.session.commit()
+            clear_otp_session("register")
             return render_template(
                 "verify_registration_otp.html",
                 error="Too many incorrect attempts. Please register again."
             )
 
-        if entered_otp != session.get("register_otp"):
-            session["register_otp_attempts"] = attempts + 1
+        if not hmac.compare_digest(
+            otp_digest(entered_otp),
+            challenge.otp_digest,
+        ):
+            challenge.attempts += 1
+            db.session.commit()
 
             return render_template(
                 "verify_registration_otp.html",
                 error="Invalid OTP. Please try again."
             )
 
-        mobile = session.get(
-            "register_otp_mobile"
-        )
-        name = session.get(
-            "register_name",
-            ""
-        )
-        address = session.get(
-            "register_address",
-            ""
-        )
-        password_hash = session.get(
-            "register_password"
-        )
-
-        if not mobile or not password_hash:
+        mobile = challenge.mobile
+        name = challenge.registration_name or ""
+        address = challenge.registration_address or ""
+        password_hash = challenge.registration_password
+        if not password_hash:
+            db.session.delete(challenge)
+            db.session.commit()
+            clear_otp_session("register")
             return redirect("/register")
 
         customer = Customer.query.filter_by(
@@ -832,22 +1044,11 @@ def verify_registration_otp():
             )
             db.session.add(customer)
 
+        db.session.delete(challenge)
         db.session.commit()
-
+        clear_otp_session("register")
+        session.clear()
         session["user_mobile"] = mobile
-        session["user_name"] = name
-        session["user_address"] = address
-
-        for key in [
-            "register_otp",
-            "register_otp_mobile",
-            "register_name",
-            "register_address",
-            "register_password",
-            "register_otp_expires",
-            "register_otp_attempts",
-        ]:
-            session.pop(key, None)
 
         return redirect("/")
 
@@ -864,6 +1065,7 @@ def verify_registration_otp():
     "/login",
     methods=["GET", "POST"]
 )
+@limiter.limit("10 per minute; 50 per hour", methods=["POST"])
 def login():
 
     if request.method == "POST":
@@ -936,7 +1138,7 @@ def login():
 
             return render_template(
                 "login.html",
-                error="Account not found. Please register first."
+                error="Invalid mobile number or password."
             )
 
         # ------------------------------------------
@@ -947,7 +1149,7 @@ def login():
 
             return render_template(
                 "login.html",
-                error="Please reset your password using Forgot Password."
+                error="Invalid mobile number or password."
             )
 
         if not check_password_hash(
@@ -960,13 +1162,8 @@ def login():
                 error="Invalid mobile number or password."
             )
 
+        session.clear()
         session["user_mobile"] = customer.mobile
-
-        session["user_name"] = customer.name
-
-        session["user_address"] = (
-            customer.address or ""
-        )
 
         return redirect("/")
 
@@ -983,6 +1180,7 @@ def login():
     "/forgot-password",
     methods=["GET", "POST"]
 )
+@limiter.limit("5 per hour", methods=["POST"])
 def forgot_password():
 
     if request.method == "POST":
@@ -1014,13 +1212,28 @@ def forgot_password():
                 error="Account not found. Please register first."
             )
 
-        otp = str(random.randint(100000, 999999))
+        old_challenge_id = session.get("reset_challenge_id")
+        clear_otp_session("reset")
+        old_challenge = (
+            db.session.get(OTPChallenge, old_challenge_id)
+            if old_challenge_id
+            else None
+        )
+        if old_challenge:
+            db.session.delete(old_challenge)
 
-        session["reset_otp"] = otp
-        session["reset_otp_mobile"] = mobile
-        session["reset_otp_expires"] = time.time() + 300
-        session["reset_otp_attempts"] = 0
-        session.pop("reset_otp_verified", None)
+        otp = str(secrets.randbelow(900000) + 100000)
+        challenge_id = secrets.token_urlsafe(32)
+        challenge = OTPChallenge(
+            id=challenge_id,
+            purpose="reset",
+            mobile=mobile,
+            otp_digest=otp_digest(otp),
+            expires_at=datetime.now() + timedelta(minutes=5),
+        )
+        db.session.add(challenge)
+        db.session.commit()
+        session["reset_challenge_id"] = challenge_id
 
         message = (
             f"Your PICKELS STORE password reset OTP is {otp}. "
@@ -1028,14 +1241,9 @@ def forgot_password():
         )
 
         if not send_sms("+91" + mobile, message):
-            for key in [
-                "reset_otp",
-                "reset_otp_mobile",
-                "reset_otp_expires",
-                "reset_otp_attempts",
-                "reset_otp_verified",
-            ]:
-                session.pop(key, None)
+            db.session.delete(challenge)
+            db.session.commit()
+            clear_otp_session("reset")
 
             return render_template(
                 "forgot_password.html",
@@ -1051,38 +1259,37 @@ def forgot_password():
     "/verify-reset-otp",
     methods=["GET", "POST"]
 )
+@limiter.limit("10 per 10 minutes", methods=["POST"])
 def verify_reset_otp():
 
-    if not session.get("reset_otp"):
+    challenge_id = session.get("reset_challenge_id")
+    challenge = (
+        db.session.get(OTPChallenge, challenge_id)
+        if challenge_id
+        else None
+    )
+    if not challenge or challenge.purpose != "reset":
+        clear_otp_session("reset")
         return redirect("/forgot-password")
+
+    if datetime.now() >= challenge.expires_at:
+        db.session.delete(challenge)
+        db.session.commit()
+        clear_otp_session("reset")
+        return render_template(
+            "verify_reset_otp.html",
+            error="OTP expired. Please request a new one."
+        )
+
+    if challenge.verified:
+        return redirect("/reset-password")
 
     if request.method == "POST":
 
-        if time.time() > session.get("reset_otp_expires", 0):
-            for key in [
-                "reset_otp",
-                "reset_otp_mobile",
-                "reset_otp_expires",
-                "reset_otp_attempts",
-            ]:
-                session.pop(key, None)
-
-            return render_template(
-                "verify_reset_otp.html",
-                error="OTP expired. Please request a new one."
-            )
-
-        attempts = session.get("reset_otp_attempts", 0)
-
-        if attempts >= 5:
-            for key in [
-                "reset_otp",
-                "reset_otp_mobile",
-                "reset_otp_expires",
-                "reset_otp_attempts",
-            ]:
-                session.pop(key, None)
-
+        if challenge.attempts >= 5:
+            db.session.delete(challenge)
+            db.session.commit()
+            clear_otp_session("reset")
             return render_template(
                 "verify_reset_otp.html",
                 error="Too many incorrect attempts. Please request a new OTP."
@@ -1093,18 +1300,20 @@ def verify_reset_otp():
             ""
         ).strip()
 
-        if entered_otp != session.get("reset_otp"):
-            session["reset_otp_attempts"] = attempts + 1
+        if not hmac.compare_digest(
+            otp_digest(entered_otp),
+            challenge.otp_digest,
+        ):
+            challenge.attempts += 1
+            db.session.commit()
 
             return render_template(
                 "verify_reset_otp.html",
                 error="Invalid OTP. Please try again."
             )
 
-        session["reset_otp_verified"] = True
-        session.pop("reset_otp", None)
-        session.pop("reset_otp_expires", None)
-        session.pop("reset_otp_attempts", None)
+        challenge.verified = True
+        db.session.commit()
 
         return redirect("/reset-password")
 
@@ -1115,20 +1324,33 @@ def verify_reset_otp():
     "/reset-password",
     methods=["GET", "POST"]
 )
+@limiter.limit("5 per hour", methods=["POST"])
 def reset_password():
 
-    mobile = session.get("reset_otp_mobile")
+    challenge_id = session.get("reset_challenge_id")
+    challenge = (
+        db.session.get(OTPChallenge, challenge_id)
+        if challenge_id
+        else None
+    )
+    if not challenge or challenge.purpose != "reset" or not challenge.verified:
+        clear_otp_session("reset")
+        return redirect("/forgot-password")
 
-    if not mobile or not session.get("reset_otp_verified"):
+    if datetime.now() >= challenge.expires_at:
+        db.session.delete(challenge)
+        db.session.commit()
+        clear_otp_session("reset")
         return redirect("/forgot-password")
 
     customer = Customer.query.filter_by(
-        mobile=mobile
+        mobile=challenge.mobile
     ).first()
 
     if not customer:
-        session.pop("reset_otp_mobile", None)
-        session.pop("reset_otp_verified", None)
+        db.session.delete(challenge)
+        db.session.commit()
+        clear_otp_session("reset")
         return redirect("/forgot-password")
 
     if request.method == "POST":
@@ -1161,10 +1383,9 @@ def reset_password():
             )
 
         customer.password = generate_password_hash(password)
+        db.session.delete(challenge)
         db.session.commit()
-
-        session.pop("reset_otp_mobile", None)
-        session.pop("reset_otp_verified", None)
+        clear_otp_session("reset")
 
         return redirect("/login")
 
@@ -1190,12 +1411,9 @@ def account():
         mobile=user_mobile
     ).first()
 
-    if customer:
-
-        session["user_name"] = customer.name
-        session["user_address"] = (
-            customer.address or ""
-        )
+    if not customer:
+        session.clear()
+        return redirect("/login")
 
     total_orders = Order.query.filter_by(
         mobile=user_mobile
@@ -1211,6 +1429,7 @@ def account():
 
     return render_template(
         "account.html",
+        customer=customer,
         total_orders=total_orders,
         recent_orders=recent_orders,
     )
@@ -1224,6 +1443,7 @@ def account():
     "/update-address",
     methods=["POST"]
 )
+@limiter.limit("30 per hour")
 def update_address():
 
     if not session.get("user_mobile"):
@@ -1239,7 +1459,7 @@ def update_address():
         ""
     ).strip()
 
-    if not address:
+    if not address or len(address) > 1000:
 
         return redirect("/account")
 
@@ -1248,25 +1468,12 @@ def update_address():
     ).first()
 
     if not customer:
+        session.clear()
+        return redirect("/login")
 
-        customer = Customer(
-            name=session.get(
-                "user_name",
-                "Customer"
-            ),
-            mobile=mobile,
-            address=address,
-        )
-
-        db.session.add(customer)
-
-    else:
-
-        customer.address = address
+    customer.address = address
 
     db.session.commit()
-
-    session["user_address"] = address
 
     return redirect("/account")
 
@@ -1277,21 +1484,7 @@ def update_address():
 
 @app.route("/logout")
 def logout():
-
-    session.pop(
-        "user_mobile",
-        None
-    )
-
-    session.pop(
-        "user_name",
-        None
-    )
-
-    session.pop(
-        "user_address",
-        None
-    )
+    session.clear()
 
     return redirect("/")
 
@@ -1311,15 +1504,13 @@ def checkout():
         mobile=session.get("user_mobile")
     ).first()
 
-    if customer:
-
-        session["user_name"] = customer.name
-        session["user_address"] = (
-            customer.address or ""
-        )
+    if not customer:
+        session.clear()
+        return redirect("/login")
 
     return render_template(
-        "checkout.html"
+        "checkout.html",
+        customer=customer,
     )
 
 
@@ -1331,6 +1522,7 @@ def checkout():
     "/place-order",
     methods=["POST"]
 )
+@limiter.limit("10 per minute; 100 per hour")
 def place_order():
 
     if not session.get("user_mobile"):
@@ -1355,43 +1547,58 @@ def place_order():
                 }
             ), 400
 
-        items = data.get(
-            "items",
-            []
-        )
+        items = data.get("items", [])
+        if not isinstance(items, list) or not items or len(items) > 50:
+            return jsonify(
+                {
+                    "success": False,
+                    "message": "Invalid cart items.",
+                }
+            ), 400
 
-        payment_method = data.get(
-            "payment_method",
-            "COD"
-        )
-
-        name = session.get(
-            "user_name",
-            ""
-        )
+        payment_method = str(data.get("payment_method", "COD")).strip().upper()
+        if payment_method != "COD":
+            return jsonify(
+                {
+                    "success": False,
+                    "message": "Use the secure online payment flow for online orders.",
+                }
+            ), 400
 
         mobile = session.get(
             "user_mobile",
             ""
         )
+        customer = Customer.query.filter_by(mobile=mobile).first()
+        if not customer:
+            session.clear()
+            return jsonify(
+                {
+                    "success": False,
+                    "message": "Please login again.",
+                }
+            ), 401
+
+        name = customer.name
 
         address = data.get(
             "address",
-            ""
+            customer.address or "",
         )
 
         if not address:
+            address = customer.address or ""
 
-            address = session.get(
-                "user_address",
-                ""
-            )
+        if not isinstance(address, str):
+            return jsonify(
+                {
+                    "success": False,
+                    "message": "Please enter a valid delivery address.",
+                }
+            ), 400
+        address = address.strip()
 
-        address = str(
-            address
-        ).strip()
-
-        if not address:
+        if not address or len(address) > 1000:
 
             return jsonify(
                 {
@@ -1411,6 +1618,7 @@ def place_order():
 
         validated_items = []
         products_by_item = []
+        seen_product_names = set()
 
         for item in items:
 
@@ -1432,6 +1640,15 @@ def place_order():
                     ""
                 )
             ).strip()
+            normalized_name = product_name.casefold()
+            if not product_name or len(product_name) > 100 or normalized_name in seen_product_names:
+                return jsonify(
+                    {
+                        "success": False,
+                        "message": "Invalid or duplicate cart item.",
+                    }
+                ), 400
+            seen_product_names.add(normalized_name)
 
             try:
 
@@ -1446,8 +1663,20 @@ def place_order():
                 TypeError,
                 ValueError
             ):
+                return jsonify(
+                    {
+                        "success": False,
+                        "message": "Invalid cart quantity.",
+                    }
+                ), 400
 
-                quantity = 1
+            if quantity <= 0 or quantity > 100:
+                return jsonify(
+                    {
+                        "success": False,
+                        "message": "Invalid cart quantity.",
+                    }
+                ), 400
 
             product = Product.query.filter(
                 db.func.lower(Product.name)
@@ -1525,26 +1754,7 @@ def place_order():
             in products_by_item
         )
 
-        customer = Customer.query.filter_by(
-            mobile=mobile
-        ).first()
-
-        if customer:
-
-            customer.name = name
-            customer.address = address
-
-        else:
-
-            customer = Customer(
-                name=name,
-                mobile=mobile,
-                address=address
-            )
-
-            db.session.add(customer)
-
-        session["user_address"] = address
+        customer.address = address
 
         for product, quantity in products_by_item:
 
@@ -1560,11 +1770,7 @@ def place_order():
             total=calculated_total,
             status="Pending",
             payment_method=payment_method,
-            payment_status=(
-                "Pending"
-                if str(payment_method).lower() == "cod"
-                else "Pending"
-            ),
+            payment_status="Pending",
         )
 
         db.session.add(order)
@@ -1596,10 +1802,7 @@ def place_order():
 
         db.session.rollback()
 
-        print(
-            "Place order error:",
-            e
-        )
+        app.logger.error("Place order failed (%s).", type(e).__name__)
 
         return jsonify(
             {
@@ -1617,6 +1820,7 @@ def place_order():
     "/create-razorpay-order",
     methods=["POST"]
 )
+@limiter.limit("10 per minute; 100 per hour")
 def create_razorpay_order():
 
     if not session.get("user_mobile"):
@@ -1651,7 +1855,7 @@ def create_razorpay_order():
         if not isinstance(
             items,
             list
-        ) or not items:
+        ) or not items or len(items) > 50:
 
             return jsonify(
                 {
@@ -1661,6 +1865,7 @@ def create_razorpay_order():
             ), 400
 
         total = 0
+        seen_product_names = set()
 
         for item in items:
 
@@ -1682,6 +1887,15 @@ def create_razorpay_order():
                     ""
                 )
             ).strip()
+            normalized_name = product_name.casefold()
+            if not product_name or len(product_name) > 100 or normalized_name in seen_product_names:
+                return jsonify(
+                    {
+                        "success": False,
+                        "message": "Invalid or duplicate cart item.",
+                    }
+                ), 400
+            seen_product_names.add(normalized_name)
 
             try:
 
@@ -1704,7 +1918,7 @@ def create_razorpay_order():
                     }
                 ), 400
 
-            if not product_name or quantity <= 0:
+            if quantity <= 0 or quantity > 100:
 
                 return jsonify(
                     {
@@ -1780,10 +1994,7 @@ def create_razorpay_order():
 
     except Exception as e:
 
-        print(
-            "Razorpay order error:",
-            e
-        )
+        app.logger.error("Razorpay order creation failed (%s).", type(e).__name__)
 
         return jsonify(
             {
@@ -1803,6 +2014,7 @@ def create_razorpay_order():
     "/verify-razorpay-payment",
     methods=["POST"]
 )
+@limiter.limit("10 per minute; 100 per hour")
 def verify_razorpay_payment():
 
     if not session.get("user_mobile"):
@@ -1814,13 +2026,23 @@ def verify_razorpay_payment():
         razorpay_payment_id = str(data.get("razorpay_payment_id", "")).strip()
         razorpay_signature = str(data.get("razorpay_signature", "")).strip()
         items = data.get("items", [])
-        address = str(data.get("address", "")).strip() or str(session.get("user_address", "")).strip()
+        customer = Customer.query.filter_by(
+            mobile=session.get("user_mobile")
+        ).first()
+        if not customer:
+            session.clear()
+            return jsonify({"success": False, "message": "Please login again."}), 401
+
+        address = data.get("address") or customer.address or ""
+        if not isinstance(address, str):
+            return jsonify({"success": False, "message": "Please enter a valid delivery address."}), 400
+        address = address.strip()
 
         if not razorpay_order_id or not razorpay_payment_id or not razorpay_signature:
             return jsonify({"success": False, "message": "Payment verification data is missing."}), 400
-        if not isinstance(items, list) or not items:
+        if not isinstance(items, list) or not items or len(items) > 50:
             return jsonify({"success": False, "message": "Your cart is empty."}), 400
-        if not address:
+        if not address or len(address) > 1000:
             return jsonify({"success": False, "message": "Please enter your delivery address."}), 400
 
         razorpay_client.utility.verify_payment_signature({
@@ -1843,16 +2065,21 @@ def verify_razorpay_payment():
         validated_items = []
         products_by_item = []
         calculated_total = 0
+        seen_product_names = set()
 
         for item in items:
             if not isinstance(item, dict):
                 return jsonify({"success": False, "message": "Invalid cart item."}), 400
             product_name = str(item.get("name", "")).strip()
+            normalized_name = product_name.casefold()
+            if not product_name or len(product_name) > 100 or normalized_name in seen_product_names:
+                return jsonify({"success": False, "message": "Invalid or duplicate cart item."}), 400
+            seen_product_names.add(normalized_name)
             try:
                 quantity = int(item.get("quantity", 0))
             except (TypeError, ValueError):
                 return jsonify({"success": False, "message": "Invalid quantity."}), 400
-            if not product_name or quantity <= 0:
+            if quantity <= 0 or quantity > 100:
                 return jsonify({"success": False, "message": "Invalid cart item."}), 400
 
             product = Product.query.filter(db.func.lower(Product.name) == product_name.lower()).first()
@@ -1896,14 +2123,8 @@ def verify_razorpay_payment():
             return jsonify({"success": False, "message": "Payment is not captured yet. Please contact PICKELS STORE."}), 400
 
         mobile = session.get("user_mobile", "")
-        name = session.get("user_name", "")
-        customer = Customer.query.filter_by(mobile=mobile).first()
-        if customer:
-            customer.name = name
-            customer.address = address
-        else:
-            db.session.add(Customer(name=name, mobile=mobile, address=address))
-        session["user_address"] = address
+        name = customer.name
+        customer.address = address
 
         for product, quantity in products_by_item:
             product.stock -= quantity
@@ -1917,6 +2138,7 @@ def verify_razorpay_payment():
             status="Pending",
             payment_method="Online",
             payment_status="Paid",
+            payment_recorded_at=datetime.now(),
             razorpay_order_id=razorpay_order_id,
             razorpay_payment_id=razorpay_payment_id,
         )
@@ -1932,7 +2154,7 @@ def verify_razorpay_payment():
 
     except Exception as e:
         db.session.rollback()
-        print("Razorpay verification error:", e)
+        app.logger.error("Razorpay verification failed (%s).", type(e).__name__)
         return jsonify({"success": False, "message": "Payment verification failed."}), 400
 
 
@@ -1944,6 +2166,7 @@ def verify_razorpay_payment():
     "/cancel-order/<int:order_id>",
     methods=["POST"]
 )
+@limiter.limit("20 per hour")
 def cancel_order(order_id):
 
     mobile = session.get(
@@ -2183,7 +2406,12 @@ def order_history():
     "/track-order",
     methods=["GET", "POST"]
 )
+@limiter.limit("30 per hour", methods=["POST"])
 def track_order():
+
+    mobile = session.get("user_mobile")
+    if not mobile:
+        return redirect("/login")
 
     order = None
     error = None
@@ -2194,22 +2422,6 @@ def track_order():
             "order_id",
             ""
         ).strip()
-
-        mobile = request.form.get(
-            "mobile",
-            ""
-        ).strip().replace(
-            " ",
-            ""
-        )
-
-        if mobile.startswith("+91"):
-
-            mobile = mobile[3:]
-
-        if mobile.startswith("91") and len(mobile) == 12:
-
-            mobile = mobile[2:]
 
         try:
 
@@ -2235,11 +2447,7 @@ def track_order():
             return render_template(
                 "track_order.html",
                 order=None,
-                error=(
-                    "Order not found. "
-                    "Please check your Order ID "
-                    "and mobile number."
-                ),
+                error="Order not found for your account.",
             )
 
         order.created_at_ist = (
@@ -2267,6 +2475,7 @@ def track_order():
     "/admin-login",
     methods=["GET", "POST"]
 )
+@limiter.limit("10 per 15 minutes", methods=["POST"])
 def admin_login():
 
     if request.method == "POST":
@@ -2289,13 +2498,18 @@ def admin_login():
             "ADMIN_PASSWORD"
         )
 
-        if (
-            expected_username
-            and expected_password
-            and username == expected_username
-            and password == expected_password
-        ):
+        username_matches = bool(expected_username) and hmac.compare_digest(
+            username.encode("utf-8"),
+            expected_username.encode("utf-8"),
+        )
+        password_matches = bool(expected_password) and hmac.compare_digest(
+            password.encode("utf-8"),
+            expected_password.encode("utf-8"),
+        )
 
+        if username_matches and password_matches:
+
+            session.clear()
             session["admin_logged_in"] = True
 
             return redirect(
@@ -2478,6 +2692,7 @@ def admin():
     "/update-order/<int:order_id>",
     methods=["POST"]
 )
+@limiter.limit("60 per hour")
 def update_order(order_id):
 
     if not session.get(
@@ -2528,6 +2743,38 @@ def update_order(order_id):
     )
 
 
+@app.route(
+    "/record-cod-payment/<int:order_id>",
+    methods=["POST"]
+)
+@limiter.limit("30 per hour")
+def record_cod_payment(order_id):
+
+    if not session.get("admin_logged_in"):
+        return redirect("/admin-login")
+
+    order = Order.query.get_or_404(order_id)
+
+    if (order.payment_method or "").strip().lower() != "cod":
+        flash("Only COD orders can be recorded as collected here.", "error")
+        return redirect("/admin")
+
+    if (order.status or "").strip().lower() == "cancelled":
+        flash("Payment cannot be recorded for a cancelled order.", "error")
+        return redirect("/admin")
+
+    if (order.payment_status or "").strip().lower() != "pending":
+        flash("Only pending COD payments can be recorded as received.", "error")
+        return redirect("/admin")
+
+    order.payment_status = "Paid"
+    order.payment_recorded_at = datetime.now()
+    db.session.commit()
+
+    flash(f"COD payment for Order #{order.id} recorded as received.", "success")
+    return redirect("/admin")
+
+
 # --------------------------------------------------
 # ADMIN PRODUCTS
 # --------------------------------------------------
@@ -2563,6 +2810,7 @@ def admin_products():
     "/admin/products/add",
     methods=["POST"]
 )
+@limiter.limit("30 per hour")
 def add_product():
 
     if not session.get(
@@ -2713,6 +2961,7 @@ def add_product():
     "/admin/products/edit/<int:product_id>",
     methods=["GET", "POST"]
 )
+@limiter.limit("30 per hour", methods=["POST"])
 def edit_product(product_id):
 
     if not session.get(
@@ -2874,6 +3123,7 @@ def edit_product(product_id):
     "/delete-product/<int:product_id>",
     methods=["POST"]
 )
+@limiter.limit("30 per hour")
 def delete_product(product_id):
 
     if not session.get(
@@ -3021,8 +3271,8 @@ if __name__ == "__main__":
                 "5000"
             )
         ),
-        debug=os.getenv(
-            "FLASK_DEBUG",
-            "0"
-        ) == "1",
+        debug=(
+            not IS_PRODUCTION
+            and os.getenv("FLASK_DEBUG", "0") == "1"
+        ),
     )

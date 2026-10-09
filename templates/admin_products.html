@@ -385,7 +385,7 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261010-sitewide3') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional1') }}">
 </head>
 
 <body>
@@ -441,6 +441,7 @@
                 action="/admin/products/add"
                 enctype="multipart/form-data"
             >
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                 <div class="form-grid">
 
@@ -698,8 +699,9 @@
                                 <form
                                     method="POST"
                                     action="{{ url_for('delete_product', product_id=product.id) }}"
-                                    onsubmit="return confirm('Are you sure you want to delete this product?');"
+                                    data-confirm-message="Are you sure you want to delete this product?"
                                 >
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                                     <button
                                         type="submit"
@@ -749,5 +751,6 @@
 
     </div>
 
+<script src="{{ url_for('static', filename='security-ui.js') }}"></script>
 </body>
 </html>

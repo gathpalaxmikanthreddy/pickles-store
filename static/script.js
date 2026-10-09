@@ -1,5 +1,10 @@
 ﻿let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
+function getCsrfHeaders() {
+    const token = document.querySelector('meta[name="csrf-token"]')?.content;
+    return token ? { "X-CSRFToken": token } : {};
+}
+
 
 /* =========================================
 UPDATE CART COUNT
@@ -204,7 +209,8 @@ function displayCart() {
             plusButton = `
                 <button
                     type="button"
-                    onclick="changeQuantity(${index}, 1)"
+                    data-cart-action="increase"
+                    data-cart-index="${index}"
                 >
                     +
                 </button>
@@ -254,7 +260,8 @@ function displayCart() {
 
                         <button
                             type="button"
-                            onclick="changeQuantity(${index}, -1)"
+                            data-cart-action="decrease"
+                            data-cart-index="${index}"
                         >
                             −
                         </button>
@@ -284,7 +291,8 @@ function displayCart() {
                     <button
                         type="button"
                         class="remove-cart-btn"
-                        onclick="removeFromCart(${index})"
+                        data-cart-action="remove"
+                        data-cart-index="${index}"
                     >
                         🗑️ Remove
                     </button>
@@ -519,8 +527,55 @@ function resetPlaceOrderButton() {
 
         button.disabled = false;
 
-        button.textContent =
-            "Place Order";
+        const paymentMethod = document.querySelector(
+            'input[name="payment_method"]:checked'
+        )?.value;
+        const label = document.getElementById("checkout-submit-label");
+
+        if (label) {
+            label.textContent = paymentMethod === "online"
+                ? "Continue to secure payment"
+                : "Place COD order";
+        } else {
+            button.textContent = paymentMethod === "online"
+                ? "Continue to secure payment"
+                : "Place COD order";
+        }
+    }
+}
+
+function updateCheckoutPaymentChoice() {
+    const paymentMethod = document.querySelector(
+        'input[name="payment_method"]:checked'
+    )?.value;
+    const isOnline = paymentMethod === "online";
+    const note = document.getElementById("payment-choice-note");
+    const summaryTitle = document.getElementById("checkout-payment-title");
+    const summaryDescription = document.getElementById("checkout-payment-description");
+    const label = document.getElementById("checkout-submit-label");
+
+    if (note) {
+        note.textContent = isOnline
+            ? "You’ll continue to Razorpay to complete payment before the order is placed."
+            : "No online payment is taken now. Pay cash when your order is delivered.";
+    }
+
+    if (summaryTitle) {
+        summaryTitle.textContent = isOnline
+            ? "Online payment"
+            : "Cash on Delivery";
+    }
+
+    if (summaryDescription) {
+        summaryDescription.textContent = isOnline
+            ? "You’ll pay securely through Razorpay before your order is confirmed."
+            : "Pay when your order arrives. Nothing is charged online now.";
+    }
+
+    if (label) {
+        label.textContent = isOnline
+            ? "Continue to secure payment"
+            : "Place COD order";
     }
 }
 
@@ -545,7 +600,8 @@ async function placeCODOrder(
 
                     headers: {
                         "Content-Type":
-                            "application/json"
+                            "application/json",
+                        ...getCsrfHeaders()
                     },
 
                     body: JSON.stringify({
@@ -634,7 +690,8 @@ async function createRazorpayOrder(
 
                 headers: {
                     "Content-Type":
-                        "application/json"
+                        "application/json",
+                    ...getCsrfHeaders()
                 },
 
                 body: JSON.stringify({
@@ -683,7 +740,8 @@ async function verifyRazorpayPayment(
 
                 headers: {
                     "Content-Type":
-                        "application/json"
+                        "application/json",
+                    ...getCsrfHeaders()
                 },
 
                 body: JSON.stringify({
@@ -971,6 +1029,14 @@ document.addEventListener(
 
         displayCheckout();
 
+        const paymentOptions = document.querySelectorAll(
+            'input[name="payment_method"]'
+        );
+        paymentOptions.forEach(function(option) {
+            option.addEventListener("change", updateCheckoutPaymentChoice);
+        });
+        updateCheckoutPaymentChoice();
+
 
         const checkoutForm =
             document.getElementById(
@@ -1095,8 +1161,18 @@ document.addEventListener(
 
                     button.disabled = true;
 
-                    button.textContent =
-                        "Placing Order...";
+                    const buttonLabel = button.querySelector(
+                        "#checkout-submit-label"
+                    );
+                    const loadingLabel = paymentMethod === "online"
+                        ? "Opening secure payment..."
+                        : "Placing COD order...";
+
+                    if (buttonLabel) {
+                        buttonLabel.textContent = loadingLabel;
+                    } else {
+                        button.textContent = loadingLabel;
+                    }
                 }
 
 
