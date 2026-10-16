@@ -209,6 +209,36 @@ class SecurityControlsTests(unittest.TestCase):
             response.get_json()["message"],
         )
 
+    def test_legal_and_seo_pages_exist(self):
+        legal_pages = [
+            ("/privacy-policy", b"Privacy Policy"),
+            ("/terms-and-conditions", b"Terms and Conditions"),
+        ]
+
+        for path, expected_text in legal_pages:
+            response = self.client.get(path)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(expected_text, response.data)
+
+        robots_response = self.client.get("/robots.txt")
+        self.assertEqual(robots_response.status_code, 200)
+        self.assertIn(b"Sitemap:", robots_response.data)
+
+        sitemap_response = self.client.get("/sitemap.xml")
+        self.assertEqual(sitemap_response.status_code, 200)
+        self.assertIn(b"<urlset", sitemap_response.data)
+
+    def test_admin_session_clears_customer_session_state(self):
+        with self.client.session_transaction() as browser_session:
+            browser_session["user_mobile"] = "1234567890"
+            browser_session["admin_logged_in"] = True
+
+        response = self.client.get("/admin")
+        self.assertEqual(response.status_code, 200)
+
+        with self.client.session_transaction() as browser_session:
+            self.assertNotIn("user_mobile", browser_session)
+
 
 if __name__ == "__main__":
     unittest.main()

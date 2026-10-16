@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png', v='20261016-transparent') }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -385,7 +386,7 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261015-imagefit2') }}">
 </head>
 
 <body>
@@ -603,6 +604,11 @@
                                     <img
                                         src="{{ url_for('static', filename='images/' + product.image) if product.image else url_for('static', filename='images/mango-pickle.png') }}"
                                         alt="{{ product.name }}"
+                                        width="360"
+                                        height="360"
+                                        loading="lazy"
+                                        decoding="async"
+                                        data-hide-on-error
                                     >
 
                                 </div>

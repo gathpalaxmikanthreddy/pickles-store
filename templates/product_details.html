@@ -3,6 +3,7 @@
 <html lang="en">
 
 <head>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png', v='20261016-transparent') }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -370,7 +371,7 @@
     }
 </style>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261015-imagefit2') }}">
 </head>
 
 <body>
@@ -427,6 +428,11 @@
             <img
                 src="{{ url_for('static', filename='images/' + product.image) }}"
                 alt="{{ product.name }}"
+                width="800"
+                height="1000"
+                fetchpriority="high"
+                decoding="async"
+                data-hide-on-error
             >
 
         </div>
@@ -488,6 +494,20 @@
                 </p>
 
             {% endif %}
+
+            <div class="quantity-selector">
+                <label for="product-quantity">Quantity</label>
+                <input
+                    type="number"
+                    id="product-quantity"
+                    min="1"
+                    max="{{ product.stock if product.stock > 0 else 1 }}"
+                    value="1"
+                    inputmode="numeric"
+                    aria-describedby="product-quantity-help"
+                >
+                <small id="product-quantity-help">Choose how many jars to add.</small>
+            </div>
 
 
             <button
@@ -778,7 +798,8 @@
                         name,
                         price,
                         image,
-                        stock
+                        stock,
+                        document.getElementById("product-quantity")?.value
                     );
 
                     addButton.innerText =

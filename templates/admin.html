@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png', v='20261016-transparent') }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
@@ -335,7 +336,7 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261015-imagefit2') }}">
 </head>
 
 <body>
@@ -511,12 +512,18 @@
 
                                 {% if item.image %}
 
-                                <img
-                                    src="/static/images/{{ item.image|default('mango-pickle.png', true) }}"
-                                    alt="{{ item.name|default('Product', true) }}"
-                                    class="item-img"
-                                    data-fallback-image="/static/images/mango-pickle.png"
-                                >
+                                <span class="item-img-wrap">
+                                    <img
+                                        src="/static/images/{{ item.image|default('mango-pickle.png', true) }}"
+                                        alt="{{ item.name|default('Product', true) }}"
+                                        class="item-img"
+                                        width="72"
+                                        height="72"
+                                        loading="lazy"
+                                        decoding="async"
+                                        data-fallback-image="/static/images/mango-pickle.png"
+                                    >
+                                </span>
 
                                 {% endif %}
 
@@ -784,12 +791,18 @@
 
                                 {% if item.image %}
 
-                                <img
-                                    src="/static/images/{{ item.image|default('mango-pickle.png', true) }}"
-                                    alt="{{ item.name|default('Product', true) }}"
-                                    class="item-img"
-                                    data-fallback-image="/static/images/mango-pickle.png"
-                                >
+                                <span class="item-img-wrap">
+                                    <img
+                                        src="/static/images/{{ item.image|default('mango-pickle.png', true) }}"
+                                        alt="{{ item.name|default('Product', true) }}"
+                                        class="item-img"
+                                        width="72"
+                                        height="72"
+                                        loading="lazy"
+                                        decoding="async"
+                                        data-fallback-image="/static/images/mango-pickle.png"
+                                    >
+                                </span>
 
                                 {% endif %}
 

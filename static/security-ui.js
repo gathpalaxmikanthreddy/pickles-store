@@ -51,5 +51,6 @@ document.addEventListener("error", function(event) {
         image.src = image.dataset.fallbackImage;
     } else if (image.hasAttribute("data-hide-on-error")) {
         image.hidden = true;
+        image.parentElement?.classList.add("image-failed");
     }
 }, true);

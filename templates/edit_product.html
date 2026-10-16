@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png', v='20261016-transparent') }}">
 
 <meta charset="UTF-8">
 
@@ -202,7 +203,7 @@
 
 </style>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261015-imagefit2') }}">
 </head>
 
 
@@ -246,6 +247,10 @@
             <img
                 src="{{ url_for('static', filename='images/' + product.image) }}"
                 alt="{{ product.name }}"
+                width="600"
+                height="750"
+                loading="lazy"
+                decoding="async"
                 data-hide-on-error
             >
 
@@ -449,6 +454,8 @@
     </div>
 
 </main>
+
+<script src="{{ url_for('static', filename='security-ui.js', v='20261015-images') }}"></script>
 
 </body>
 

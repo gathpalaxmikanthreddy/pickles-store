@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms and Conditions | PICKLES STORE</title>
+    <meta name="description" content="Read the order, payment, delivery, cancellation, and refund terms for PICKLES STORE.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='legal.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261015-imagefit2') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png', v='20261016-transparent') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo"><span class="logo-icon">🥭</span> <span><b>PICKLES</b> STORE</span></div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('home') }}#about">About</a>
+            <a href="{{ url_for('home') }}#contact">Contact</a>
+            <a href="{{ url_for('cart') }}" class="cart-link">Cart <span id="cart-count">0</span></a>
+        </nav>
+    </nav>
+
+    <main class="legal-page">
+        <div class="legal-shell">
+            <p class="eyebrow">Terms and Conditions</p>
+            <h1>Terms and Conditions</h1>
+            <p>Last updated: 14 Oct 2026</p>
+
+            <section>
+                <h2>1. General</h2>
+                <p>These terms and conditions govern your use of the PICKLES STORE website and services. By placing an order, you agree to the policies, pricing, and delivery conditions published on this website.</p>
+            </section>
+
+            <section>
+                <h2>2. Product information and availability</h2>
+                <p>We try to keep product descriptions, images, prices, and stock information accurate and current. However, product availability and pricing may change without notice. We reserve the right to limit quantities or cancel orders if stock or pricing information is affected by an error or a stock update.</p>
+            </section>
+
+            <section>
+                <h2>3. Orders and payments</h2>
+                <p>Orders are accepted when they are confirmed by the store and payment is received or the order is accepted under the agreed method. For online payments, the payment is verified on the server before the order is marked as confirmed. Cash on delivery orders are accepted only where the delivery method and payment arrangement are available.</p>
+                <p>Customers must provide accurate delivery details and ensure that the recipient is available to receive the order at the time of delivery.</p>
+            </section>
+
+            <section>
+                <h2>4. Delivery</h2>
+                <p>Delivery terms depend on the selected order, location, and service availability. Delivery windows are estimates and may vary due to weather, courier constraints, or local conditions beyond our control. We will communicate updates where possible.</p>
+            </section>
+
+            <section>
+                <h2>5. Cancellations, returns, and refunds</h2>
+                <p>Cancellations are subject to the current order status and are processed in line with the confirmation and dispatch timeline. If a product is damaged, incorrect, or not as described, customers should contact the store support team promptly with the order details and evidence. Refunds are handled after review and according to the payment method used.</p>
+            </section>
+
+            <section>
+                <h2>6. Customer responsibilities</h2>
+                <p>Customers are responsible for providing correct contact details, address information, and payment information. We are not liable for delays, failed deliveries, or additional charges caused by incorrect or incomplete customer details.</p>
+            </section>
+
+            <section>
+                <h2>7. Account security</h2>
+                <p>Customers are responsible for protecting their account credentials and maintaining the confidentiality of their account details. We recommend using a strong, unique password and not sharing login details with others.</p>
+            </section>
+
+            <section>
+                <h2>8. Website use</h2>
+                <p>You must not use this website for fraudulent, abusive, spam-related, or unlawful activity. We reserve the right to suspend or refuse access to the platform if these rules are violated.</p>
+            </section>
+
+            <section>
+                <h2>9. Limitation of liability</h2>
+                <p>We aim to provide a reliable shopping experience, but we are not liable for indirect, incidental, or consequential losses arising from the use of the website or the products sold. Our liability is limited to the value of the specific order where applicable.</p>
+            </section>
+
+            <section>
+                <h2>10. Contact</h2>
+                <p>If you have questions about these terms, please use the contact information available on the website or reach out through the support contact listed on the home page.</p>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <p>© 2026 PICKLES STORE. All Rights Reserved.</p>
+        <div class="footer-links">
+            <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a>
+            <a href="{{ url_for('terms_and_conditions') }}">Terms & Conditions</a>
+            <a href="{{ url_for('home') }}#contact">Contact</a>
+        </div>
+    </footer>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

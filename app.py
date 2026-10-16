@@ -10,7 +10,7 @@ from uuid import uuid4
 import requests
 import razorpay
 from dotenv import load_dotenv
-from flask import Flask, flash, g, jsonify, redirect, render_template, request, session
+from flask import Flask, Response, flash, g, jsonify, redirect, render_template, request, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -55,6 +55,7 @@ app.config["SESSION_COOKIE_SECURE"] = (
 )
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=12)
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
 
 if IS_PRODUCTION:
@@ -99,6 +100,24 @@ def assign_csp_nonce():
     g.csp_nonce = secrets.token_urlsafe(16)
 
 
+@app.before_request
+def enforce_session_roles():
+    session.permanent = True
+
+    if session.get("admin_logged_in"):
+        session.pop("user_mobile", None)
+        session.pop("register_challenge_id", None)
+        session.pop("reset_challenge_id", None)
+        return None
+
+    if session.get("user_mobile"):
+        session.pop("admin_logged_in", None)
+        session.pop("register_challenge_id", None)
+        session.pop("reset_challenge_id", None)
+
+    return None
+
+
 csrf = CSRFProtect(app)
 limiter = Limiter(
     key_func=get_remote_address,
@@ -126,9 +145,9 @@ def add_security_headers(response):
         "frame-ancestors 'none'; "
         "form-action 'self' https://api.razorpay.com https://checkout.razorpay.com; "
         f"script-src 'self' 'nonce-{g.csp_nonce}' https://checkout.razorpay.com; "
-        "style-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "img-src 'self' data: https:; "
-        "font-src 'self' data:; "
+        "font-src 'self' data: https://fonts.gstatic.com; "
         "connect-src 'self' https://api.razorpay.com https://checkout.razorpay.com; "
         "frame-src https://api.razorpay.com https://checkout.razorpay.com",
     )
@@ -280,6 +299,11 @@ def file_too_large(error):
         return redirect("/admin/products")
 
     return "Uploaded image is too large. Maximum size is 5 MB.", 413
+
+
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template("404.html"), 404
 
 
 @app.template_filter("fromjson")
@@ -714,6 +738,55 @@ def home():
         "index.html",
         products=products,
         customer=customer,
+    )
+
+
+@app.route("/privacy-policy")
+def privacy_policy():
+    return render_template("privacy_policy.html")
+
+
+@app.route("/terms-and-conditions")
+def terms_and_conditions():
+    return render_template("terms_and_conditions.html")
+
+
+@app.route("/robots.txt")
+def robots_txt():
+    root_url = request.url_root.rstrip("/")
+    content = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /admin\n"
+        "Disallow: /admin-login\n"
+        "Disallow: /checkout\n"
+        f"Sitemap: {root_url}/sitemap.xml\n"
+    )
+    return Response(content, mimetype="text/plain")
+
+
+@app.route("/sitemap.xml")
+def sitemap_xml():
+    root_url = request.url_root.rstrip("/")
+    public_routes = [
+        "",
+        "/cart",
+        "/checkout",
+        "/login",
+        "/register",
+        "/track-order",
+        "/privacy-policy",
+        "/terms-and-conditions",
+    ]
+    products = Product.query.filter_by(active=True).order_by(Product.id.asc()).all()
+    return Response(
+        render_template(
+            "sitemap.xml",
+            root_url=root_url,
+            public_routes=public_routes,
+            products=products,
+        ),
+        mimetype="application/xml",
     )
 
 

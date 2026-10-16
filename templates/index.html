@@ -6,12 +6,26 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="PICKELS STORE brings homemade pickles and traditional Indian flavours to your table with convenient online ordering and delivery.">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="PICKELS STORE | Homemade Pickles & Traditional Flavours">
+<meta property="og:description" content="Order authentic homemade pickles online with secure checkout and doorstep delivery.">
+<meta property="og:image" content="{{ request.url_root.rstrip('/') }}/static/images/mango-pickle.png">
+<meta property="og:url" content="{{ request.url_root.rstrip('/') }}/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="{{ request.url_root.rstrip('/') }}/">
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png', v='20261016-transparent') }}">
 
 <title>PICKELS STORE</title>
 
 <link
     rel="stylesheet"
     href="{{ url_for('static', filename='style.css') }}"
+>
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='legal.css') }}"
 >
 
 <style>
@@ -685,7 +699,7 @@
     }
 </style>
 
-    <link rel="stylesheet"     href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional4') }}">
+    <link rel="stylesheet"     href="{{ url_for('static', filename='3d-ui.css', v='20261016-imageportrait') }}">
     {% if products %}
         <link rel="preload" as="image" href="{{ url_for('static', filename='images/' + products[0].image) }}">
     {% endif %}
@@ -810,6 +824,11 @@
                 <img
                     src="{{ url_for('static', filename='images/' + products[0].image) }}"
                     alt="{{ products[0].name }} pickle"
+                    width="600"
+                    height="750"
+                    fetchpriority="high"
+                    decoding="async"
+                    data-hide-on-error
                 >
                 <span class="hero-product-label">{{ products[0].name }}</span>
             {% else %}
@@ -888,6 +907,20 @@
                 <option value="out-of-stock">Sold out</option>
             </select>
         </label>
+        <label class="availability-filter product-sort" for="product-sort">
+            <span>Sort by</span>
+            <select id="product-sort" aria-controls="products-grid">
+                <option value="featured">Featured</option>
+                <option value="name-asc">Name: A to Z</option>
+                <option value="price-asc">Price: low to high</option>
+                <option value="price-desc">Price: high to low</option>
+            </select>
+        </label>
+    </div>
+    <div class="category-chips" role="group" aria-label="Filter products by category">
+        <button type="button" class="category-chip is-active" data-category="all" aria-pressed="true">All pickles</button>
+        <button type="button" class="category-chip" data-category="vegetarian" aria-pressed="false">Vegetarian</button>
+        <button type="button" class="category-chip" data-category="non-vegetarian" aria-pressed="false">Non-vegetarian</button>
     </div>
     <p class="search-status" id="product-search-status" role="status" aria-live="polite" aria-atomic="true"></p>
 
@@ -905,6 +938,8 @@
             class="product-card"
             data-product-name="{{ (product.name ~ ' ' ~ (product.description or '') ~ ' ' ~ product.unit)|lower }}"
             data-stock-filter="{% if product.stock <= 0 %}out-of-stock{% elif product.stock <= 5 %}low-stock{% else %}in-stock{% endif %}"
+            data-product-category="auto"
+            data-product-price="{{ product.price }}"
         >
 
             <!-- PRODUCT IMAGE -->
@@ -919,8 +954,11 @@
                     <img
                         src="{{ url_for('static', filename='images/' + product.image) }}"
                         alt="{{ product.name }}"
+                        width="600"
+                        height="600"
                         loading="lazy"
                         decoding="async"
+                        data-hide-on-error
                     >
 
                     <span class="product-image-badge">
@@ -1279,6 +1317,12 @@
         © 2026 PICKELS STORE. All Rights Reserved.
     </p>
 
+    <div class="footer-links">
+        <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a>
+        <a href="{{ url_for('terms_and_conditions') }}">Terms & Conditions</a>
+        <a href="{{ url_for('home') }}#contact">Contact</a>
+    </div>
+
 </footer>
 
 
@@ -1287,7 +1331,7 @@
 ========================= -->
 
 <script
-    src="{{ url_for('static', filename='script.js', v='20261010-checkout2') }}"
+    src="{{ url_for('static', filename='script.js', v='20261016-cart-page') }}"
 ></script>
 
 <script nonce="{{ g.csp_nonce }}">
@@ -1386,6 +1430,10 @@
                     "product-availability"
                 );
 
+            const categoryChips = document.querySelectorAll(".category-chip");
+            const sortSelect = document.getElementById("product-sort");
+            let selectedCategory = "all";
+
             const normalizeSearchText = function(value) {
                 return value
                     .normalize("NFD")
@@ -1411,7 +1459,10 @@
                     const matchesAvailability =
                         selectedAvailability === "all"
                         || card.dataset.stockFilter === selectedAvailability;
-                    const isVisible = matchesSearch && matchesAvailability;
+                    const matchesCategory =
+                        selectedCategory === "all"
+                        || card.dataset.productCategory === selectedCategory;
+                    const isVisible = matchesSearch && matchesAvailability && matchesCategory;
 
                     card.style.display = isVisible ? "" : "none";
                     if (isVisible) visibleProducts++;
@@ -1424,7 +1475,38 @@
                     : `Showing ${visibleProducts} of ${productCards.length} ${productCards.length === 1 ? "product" : "products"}`;
             };
 
+            const sortProducts = function() {
+                if (!sortSelect) return;
+                const grid = document.getElementById("products-grid");
+                const cards = Array.from(productCards);
+                const selectedSort = sortSelect.value;
+
+                cards.sort(function(first, second) {
+                    if (selectedSort === "name-asc") {
+                        return first.dataset.productName.localeCompare(second.dataset.productName);
+                    }
+                    const firstPrice = Number(first.dataset.productPrice) || 0;
+                    const secondPrice = Number(second.dataset.productPrice) || 0;
+                    if (selectedSort === "price-asc") return firstPrice - secondPrice;
+                    if (selectedSort === "price-desc") return secondPrice - firstPrice;
+                    return Number(first.dataset.originalOrder) - Number(second.dataset.originalOrder);
+                });
+                cards.forEach(function(card) {
+                    grid.appendChild(card);
+                });
+            };
+
             if (searchInput) {
+                productCards.forEach(function(card, index) {
+                    card.dataset.originalOrder = String(index);
+                    if (card.dataset.productCategory === "auto") {
+                        card.dataset.productCategory =
+                            /\b(chicken|fish|prawn|prawns|shrimp|mutton|meat)\b/i.test(card.dataset.productName || "")
+                                ? "non-vegetarian"
+                                : "vegetarian";
+                    }
+                });
+
                 searchInput.addEventListener(
                     "input",
                     updateProductSearch
@@ -1445,6 +1527,22 @@
                     "change",
                     updateProductSearch
                 );
+
+                categoryChips.forEach(function(chip) {
+                    chip.addEventListener("click", function() {
+                        selectedCategory = chip.dataset.category || "all";
+                        categoryChips.forEach(function(otherChip) {
+                            const isActive = otherChip === chip;
+                            otherChip.classList.toggle("is-active", isActive);
+                            otherChip.setAttribute("aria-pressed", String(isActive));
+                        });
+                        updateProductSearch();
+                    });
+                });
+
+                if (sortSelect) {
+                    sortSelect.addEventListener("change", sortProducts);
+                }
 
                 searchInput.addEventListener("keydown", function(event) {
                     if (event.key === "Enter") {

@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png', v='20261016-transparent') }}">
 
     <meta charset="UTF-8">
 
@@ -197,7 +198,7 @@
 
     </style>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261015-imagefit2') }}">
 </head>
 
 
@@ -346,24 +347,31 @@
 
                                 {% if item.image %}
 
-                                    <img
-                                        src="{{ url_for(
-                                            'static',
-                                            filename='images/' + item.image
-                                        ) }}"
-                                        alt="{{ item.name }}"
-                                        data-hide-on-error
-                                    >
+                                    <div class="item-card__image">
+                                        <img
+                                            src="{{ url_for('static', filename='images/' + item.image) }}"
+                                            alt="{{ item.name }}"
+                                            width="120"
+                                            height="120"
+                                            loading="lazy"
+                                            decoding="async"
+                                            data-hide-on-error
+                                        >
+                                    </div>
 
                                 {% else %}
 
-                                    <img
-                                        src="{{ url_for(
-                                            'static',
-                                            filename='images/mango-pickle.png'
-                                        ) }}"
-                                        alt="{{ item.name }}"
-                                    >
+                                    <div class="item-card__image">
+                                        <img
+                                            src="{{ url_for('static', filename='images/mango-pickle.png') }}"
+                                            alt="{{ item.name }}"
+                                            width="120"
+                                            height="120"
+                                            loading="lazy"
+                                            decoding="async"
+                                            data-hide-on-error
+                                        >
+                                    </div>
 
                                 {% endif %}
 

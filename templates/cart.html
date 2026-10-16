@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png', v='20261016-transparent') }}">
 
     <meta charset="UTF-8">
 
@@ -556,7 +557,7 @@
 
     </style>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261009-professional1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261016-basket4') }}">
 </head>
 
 
@@ -622,6 +623,8 @@
                     type="button"
                     class="checkout-btn"
                     data-checkout
+                    disabled
+                    aria-disabled="true"
                 >
                     Proceed to Checkout →
                 </button>
@@ -648,7 +651,7 @@
 
 
 <script
-    src="{{ url_for('static', filename='script.js') }}"
+    src="{{ url_for('static', filename='script.js', v='20261016-cart-page') }}"
 ></script>
 <script src="{{ url_for('static', filename='security-ui.js') }}"></script>
 
