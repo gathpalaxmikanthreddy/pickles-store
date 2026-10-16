@@ -4,4 +4,5 @@ __pycache__/
 *.pyc
 instance/*.db
 *.db
-.pytest_cache/.env
+.pytest_cache/
+frontend/node_modules/
