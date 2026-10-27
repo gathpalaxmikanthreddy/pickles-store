@@ -12,10 +12,12 @@
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261015-imagefit2') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261027-mobile-nav-contrast') }}">
 </head>
 
 <body>
+
+{% include "storefront_nav.html" %}
 
 <header>
     <h1>🥭 PICKELS STORE</h1>

@@ -2357,6 +2357,7 @@ body.storefront-home .add-btn:hover:not(:disabled) {
     top: 0;
     z-index: 1000;
     display: flex;
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: space-between;
     gap: 24px;
@@ -2466,6 +2467,14 @@ body.storefront-home .add-btn:hover:not(:disabled) {
     border-radius: 12px;
     background: #fff;
     box-shadow: 0 14px 32px rgba(19, 39, 27, 0.18);
+}
+
+.nav-dropdown:not([open]) > .nav-dropdown-menu {
+    display: none;
+}
+
+.nav-dropdown[open] > .nav-dropdown-menu {
+    display: grid;
 }
 
 .storefront-navigation .nav-dropdown-menu a {
@@ -2597,14 +2606,24 @@ body.storefront-home .add-btn:hover:not(:disabled) {
     }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 900px) {
     .storefront-navbar {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px 12px;
         min-height: 68px;
-        padding: 10px 20px;
+        padding: 10px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
     }
 
     .storefront-navbar .storefront-logo {
-        font-size: 17px;
+        min-width: 0;
+        gap: 6px;
+        font-size: clamp(14px, 4.2vw, 17px);
+        white-space: nowrap;
+    }
+
+    .storefront-logo > span:first-child {
+        font-size: 22px;
     }
 
     .nav-toggle {
@@ -2621,6 +2640,7 @@ body.storefront-home .add-btn:hover:not(:disabled) {
         border: 1px solid rgba(255, 255, 255, 0.24);
         border-radius: 10px;
         background: rgba(255, 255, 255, 0.08);
+        color: #fff;
         cursor: pointer;
     }
 
@@ -2657,52 +2677,69 @@ body.storefront-home .add-btn:hover:not(:disabled) {
     }
 
     .storefront-navigation {
-        position: absolute;
-        top: 100%;
-        right: 12px;
-        left: 12px;
+        position: static;
+        flex: 0 0 100%;
         align-items: stretch;
-        gap: 7px;
-        width: auto;
-        max-height: calc(100vh - 84px);
+        gap: 8px;
+        width: 100%;
+        max-height: min(70vh, 480px);
+        max-height: min(70dvh, 480px);
         overflow-y: auto;
         padding: 12px;
         border: 1px solid rgba(226, 231, 223, 0.92);
         border-radius: 15px;
         background: #fff;
         box-shadow: 0 16px 35px rgba(19, 39, 27, 0.2);
+        overscroll-behavior: contain;
     }
 
     .storefront-navbar .storefront-navigation {
         display: none;
+        justify-content: flex-start;
+        flex-wrap: nowrap;
     }
 
-    .storefront-navigation.is-open,
+    .storefront-navbar .storefront-navigation.is-open {
+        display: flex;
+        flex-direction: column;
+    }
+
     .storefront-navigation .nav-primary,
     .storefront-navigation .nav-actions {
         flex-direction: column;
         align-items: stretch;
     }
 
-    .storefront-navbar .storefront-navigation.is-open {
-        display: flex;
+    .storefront-navigation .nav-primary,
+    .storefront-navigation .nav-actions {
+        gap: 2px;
     }
 
-    .storefront-navigation a,
-    .storefront-navigation summary {
+    .storefront-navbar .storefront-navigation a,
+    .storefront-navbar .storefront-navigation summary {
         justify-content: flex-start;
         min-height: 44px;
         padding-inline: 13px;
         border-radius: 8px;
         color: var(--ui-ink);
         font-size: 14px;
+        white-space: normal;
     }
 
-    .storefront-navigation a:hover,
-    .storefront-navigation summary:hover,
-    .storefront-navigation a[aria-current="page"] {
+    .storefront-navbar .storefront-navigation .nav-primary > a,
+    .storefront-navbar .storefront-navigation .nav-admin-link {
+        color: var(--ui-ink);
+    }
+
+    .storefront-navbar .storefront-navigation a:hover,
+    .storefront-navbar .storefront-navigation summary:hover,
+    .storefront-navbar .storefront-navigation a[aria-current="page"] {
         background: #f1f5ef;
         color: var(--ui-forest);
+    }
+
+    .storefront-navigation .nav-dropdown {
+        width: 100%;
     }
 
     .nav-dropdown-menu {
@@ -2715,16 +2752,16 @@ body.storefront-home .add-btn:hover:not(:disabled) {
         box-shadow: none;
     }
 
-    .storefront-navigation .nav-dropdown-menu a {
+    .storefront-navbar .storefront-navigation .nav-dropdown-menu a {
         min-height: 40px;
     }
 
-    .storefront-navigation .nav-admin-link {
+    .storefront-navbar .storefront-navigation .nav-admin-link {
         min-height: 44px;
         border-color: var(--ui-line);
     }
 
-    .storefront-navigation .cart-link {
+    .storefront-navbar .storefront-navigation .cart-link {
         justify-content: center;
         margin: 5px 0 0;
         padding-inline: 15px;
@@ -2732,7 +2769,7 @@ body.storefront-home .add-btn:hover:not(:disabled) {
         color: #fff;
     }
 
-    .storefront-navigation .cart-link:hover {
+    .storefront-navbar .storefront-navigation .cart-link:hover {
         background: var(--ui-forest-light);
         color: #fff;
     }

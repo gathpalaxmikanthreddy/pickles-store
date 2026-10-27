@@ -371,44 +371,12 @@
     }
 </style>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261017-mobile-layout') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261027-mobile-nav-contrast') }}">
 </head>
 
 <body>
 
-<!-- NAVBAR -->
-
-<header class="navbar">
-
-    <div class="logo">
-        🥭 PICKELS STORE
-    </div>
-
-    <nav>
-
-        <a href="/">Home</a>
-
-        <a href="/cart">🛒 Cart</a>
-
-        {% if session.get("user_mobile") %}
-
-            <a href="/account">My Account</a>
-
-            <a href="/order-history">Order History</a>
-
-            <a href="/track-order">Track Order</a>
-
-            <a href="/logout">Logout</a>
-
-        {% else %}
-
-            <a href="/login">Login</a>
-
-        {% endif %}
-
-    </nav>
-
-</header>
+{% include "storefront_nav.html" %}
 
 
 <!-- PRODUCT -->

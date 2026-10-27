@@ -699,7 +699,7 @@
     }
 </style>
 
-    <link rel="stylesheet"     href="{{ url_for('static', filename='3d-ui.css', v='20261017-mobile-layout') }}">
+    <link rel="stylesheet"     href="{{ url_for('static', filename='3d-ui.css', v='20261027-mobile-nav-contrast') }}">
     {% if products %}
         <link rel="preload" as="image" href="{{ url_for('static', filename='images/' + products[0].image) }}">
     {% endif %}
@@ -711,75 +711,7 @@
      NAVBAR
 ========================= -->
 
-<header class="navbar storefront-navbar">
-
-    <a class="logo storefront-logo" href="/" aria-label="PICKELS STORE home">
-        <span aria-hidden="true">🥭</span>
-        <span>PICKELS <b>STORE</b></span>
-    </a>
-
-    <button
-        class="nav-toggle"
-        type="button"
-        aria-expanded="false"
-        aria-controls="storefront-navigation"
-        aria-label="Open navigation menu"
-    >
-        <span class="nav-toggle-icon" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
-        </span>
-        <span class="nav-toggle-label">Menu</span>
-    </button>
-
-    <nav class="storefront-navigation" id="storefront-navigation" aria-label="Main navigation">
-        <div class="nav-primary">
-            <a href="/" aria-current="page">Home</a>
-            <a href="#products">Products</a>
-            <a href="#about">About</a>
-            <a href="#contact">Contact</a>
-        </div>
-
-        <div class="nav-actions">
-            <details class="nav-dropdown">
-                <summary>Orders</summary>
-                <div class="nav-dropdown-menu">
-                    <a href="/track-order">Track Order</a>
-                    <a href="/order-history">Order History</a>
-                </div>
-            </details>
-
-            <details class="nav-dropdown">
-                <summary>
-                    {% if session.get("user_mobile") %}
-                        👤 {{ customer.name if customer else "My Account" }}
-                    {% else %}
-                        Account
-                    {% endif %}
-                </summary>
-                <div class="nav-dropdown-menu">
-                    {% if session.get("user_mobile") %}
-                        <a href="/account">My Account</a>
-                        <a href="/logout">Logout</a>
-                    {% else %}
-                        <a href="/login">Login</a>
-                        <a href="/register">Create Account</a>
-                    {% endif %}
-                </div>
-            </details>
-
-            <a class="nav-admin-link" href="/admin">Admin</a>
-
-            <a href="/cart" class="cart-link" aria-label="Shopping cart">
-                <span aria-hidden="true">🛒</span>
-                <span>Cart</span>
-                <span id="cart-count" aria-live="polite">0</span>
-            </a>
-        </div>
-    </nav>
-
-</header>
+{% include "storefront_nav.html" %}
 
 
 <!-- =========================
@@ -1333,53 +1265,6 @@
 <script
     src="{{ url_for('static', filename='script.js', v='20261016-cart-page') }}"
 ></script>
-
-<script nonce="{{ g.csp_nonce }}">
-    (() => {
-        const toggle = document.querySelector(".nav-toggle");
-        const navigation = document.getElementById("storefront-navigation");
-
-        if (!toggle || !navigation) return;
-
-        const closeMenu = () => {
-            toggle.setAttribute("aria-expanded", "false");
-            toggle.setAttribute("aria-label", "Open navigation menu");
-            toggle.querySelector(".nav-toggle-label").textContent = "Menu";
-            navigation.classList.remove("is-open");
-            navigation.querySelectorAll(".nav-dropdown[open]").forEach((dropdown) => {
-                dropdown.open = false;
-            });
-        };
-
-        toggle.addEventListener("click", () => {
-            const isOpen = toggle.getAttribute("aria-expanded") === "true";
-            toggle.setAttribute("aria-expanded", String(!isOpen));
-            toggle.setAttribute("aria-label", isOpen ? "Open navigation menu" : "Close navigation menu");
-            toggle.querySelector(".nav-toggle-label").textContent = isOpen ? "Menu" : "Close";
-            navigation.classList.toggle("is-open", !isOpen);
-        });
-
-        document.addEventListener("pointerdown", (event) => {
-            if (!event.target.closest(".storefront-navbar")) closeMenu();
-        });
-
-        window.addEventListener("resize", () => {
-            if (window.matchMedia("(min-width: 681px)").matches) closeMenu();
-        });
-
-        navigation.addEventListener("click", (event) => {
-            if (event.target.closest("a")) closeMenu();
-        });
-
-        document.addEventListener("keydown", (event) => {
-            if (event.key === "Escape") {
-                closeMenu();
-                toggle.focus();
-            }
-        });
-    })();
-</script>
-
 
 <!-- =========================
      PRODUCT SEARCH + CART

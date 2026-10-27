@@ -1,0 +1,68 @@
+<header class="navbar storefront-navbar">
+    <a class="logo storefront-logo" href="{{ url_for('home') }}" aria-label="PICKELS STORE home">
+        <span aria-hidden="true">🥭</span>
+        <span>PICKELS <b>STORE</b></span>
+    </a>
+
+    <button
+        class="nav-toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="storefront-navigation"
+        aria-label="Open navigation menu"
+    >
+        <span class="nav-toggle-icon" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+        </span>
+        <span class="nav-toggle-label">Menu</span>
+    </button>
+
+    <nav class="storefront-navigation" id="storefront-navigation" aria-label="Main navigation">
+        <div class="nav-primary">
+            <a href="{{ url_for('home') }}" {% if request.endpoint == 'home' %}aria-current="page"{% endif %}>Home</a>
+            <a href="{{ url_for('home') }}#products">Products</a>
+            <a href="{{ url_for('home') }}#about">About</a>
+            <a href="{{ url_for('home') }}#contact">Contact</a>
+        </div>
+
+        <div class="nav-actions">
+            <details class="nav-dropdown">
+                <summary id="orders-menu-toggle" aria-controls="orders-menu" aria-expanded="false">Orders</summary>
+                <div class="nav-dropdown-menu" id="orders-menu">
+                    <a href="{{ url_for('track_order') }}">Track Order</a>
+                    <a href="{{ url_for('order_history') }}">Order History</a>
+                </div>
+            </details>
+
+            <details class="nav-dropdown">
+                <summary id="account-menu-toggle" aria-controls="account-menu" aria-expanded="false">
+                    {% if session.get("user_mobile") %}
+                        👤 {{ customer.name if customer is defined and customer else "My Account" }}
+                    {% else %}
+                        Account
+                    {% endif %}
+                </summary>
+                <div class="nav-dropdown-menu" id="account-menu">
+                    {% if session.get("user_mobile") %}
+                        <a href="{{ url_for('account') }}">My Account</a>
+                        <a href="{{ url_for('logout') }}">Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}">Login</a>
+                        <a href="{{ url_for('register') }}">Create Account</a>
+                    {% endif %}
+                </div>
+            </details>
+
+            <a class="nav-admin-link" href="{{ url_for('admin') }}">Admin</a>
+
+            <a href="{{ url_for('cart') }}" class="cart-link" aria-label="Shopping cart">
+                <span aria-hidden="true">🛒</span>
+                <span>Cart</span>
+                <span id="cart-count" aria-live="polite">0</span>
+            </a>
+        </div>
+    </nav>
+</header>
+<script defer src="{{ url_for('static', filename='navigation.js', v='20261019-nav1') }}"></script>

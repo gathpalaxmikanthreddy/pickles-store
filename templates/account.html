@@ -447,44 +447,14 @@
 
     </style>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261015-imagefit2') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='3d-ui.css', v='20261027-mobile-nav-contrast') }}">
 </head>
 
 
 <body>
 
 
-<header class="navbar">
-
-    <div class="logo">
-        PICKELS STORE
-    </div>
-
-    <nav>
-
-        <a href="/">
-            Home
-        </a>
-
-        <a href="/cart">
-            🛒 Cart
-        </a>
-
-        <a href="/order-history">
-            Orders
-        </a>
-
-        <a href="/track-order">
-            Track
-        </a>
-
-        <a href="/logout">
-            Logout
-        </a>
-
-    </nav>
-
-</header>
+{% include "storefront_nav.html" %}
 
 
 <main class="container">
