@@ -142,6 +142,20 @@
         font-weight: bold;
     }
 
+    .address-text {
+        white-space: pre-line;
+        overflow-wrap: anywhere;
+    }
+
+    .refund-badge {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 4px;
+        background: #f8d7da;
+        color: #721c24;
+        font-weight: bold;
+    }
+
     .thank-you {
         text-align: center;
         margin-top: 35px;
@@ -289,56 +303,93 @@
 
     <div class="info-box">
 
-        <h3>👤 Customer</h3>
+        <h3>👤 Customer Details</h3>
 
         <p>
             <strong>Name:</strong>
-            {{ order.name }}
+            {{ order.name or "—" }}
         </p>
 
         <p>
             <strong>Mobile:</strong>
-            {{ order.mobile }}
+            {{ order.mobile or "—" }}
         </p>
-
-    </div>
-
-
-    <div class="info-box">
-
-        <h3>📦 Delivery</h3>
 
         <p>
-            {{ order.address }}
+            <strong>Delivery Address:</strong><br>
+            <span class="address-text">{{ order.address or "—" }}</span>
         </p>
 
     </div>
 
-</div>
+    <div class="info-box">
+        <h3>💳 Payment Details</h3>
 
+        <p>
+            <strong>Payment method:</strong>
+            {% if (order.payment_method or "")|lower == "online" %}
+                Online (Razorpay)
+            {% else %}
+                Cash on Delivery
+            {% endif %}
+        </p>
 
-<div class="info-box">
+        <p>
+            <strong>Payment status:</strong>
+            {% if (order.payment_status or "")|lower == "refunded" %}
+                Refunded
+                <span class="refund-badge">Refunded</span>
+            {% elif (order.payment_status or "")|lower == "paid" %}
+                Paid
+            {% else %}
+                Pending
+            {% endif %}
+        </p>
 
-    <p>
-        <strong>Payment:</strong>
+        {% if (order.payment_method or "")|lower == "online" %}
+            <p>
+                <strong>Transaction ID:</strong>
+                {{ order.razorpay_payment_id or "—" }}
+            </p>
+            <p>
+                <strong>Razorpay Order ID:</strong>
+                {{ order.razorpay_order_id or "—" }}
+            </p>
+            <p>
+                <strong>Payment date and time (IST):</strong>
+                {{ payment_recorded_at_ist.strftime("%d-%m-%Y %I:%M %p") if payment_recorded_at_ist else "—" }}
+            </p>
+        {% elif payment_recorded_at_ist %}
+            <p>
+                <strong>Cash received on</strong>
+                {{ payment_recorded_at_ist.strftime("%d-%m-%Y %I:%M %p") }} IST
+            </p>
+        {% endif %}
 
-        <span class="payment">
-            {{ order.payment_method }}
-        </span>
-    </p>
+        <p>
+            <strong>Invoice total:</strong>
+            ₹{{ "%.2f"|format(order.total or 0) }}
+        </p>
+        <p>
+            <strong>Amount paid:</strong>
+            {% if (order.payment_status or "")|lower == "paid" %}
+                ₹{{ "%.2f"|format(order.total or 0) }}
+            {% else %}
+                ₹0.00
+            {% endif %}
+        </p>
+        {% if (order.payment_status or "")|lower == "refunded" %}
+            <p>
+                <strong>Amount refunded:</strong>
+                ₹{{ "%.2f"|format(order.total or 0) }}
+            </p>
+        {% endif %}
 
-    <p>
-        <strong>Payment Status:</strong>
-        {{ order.payment_status or "Pending" }}
-    </p>
-
-    <p>
-        <strong>Order Status:</strong>
-
-        <span class="status">
-            {{ order.status }}
-        </span>
-    </p>
+        <p>
+            <strong>Order status:</strong>
+            <span class="status">{{ order.status or "—" }}</span>
+        </p>
+    </div>
 
 </div>
 
@@ -398,7 +449,7 @@
         <tr class="total-row">
 
             <td colspan="3" class="right">
-                TOTAL
+                INVOICE TOTAL
             </td>
 
             <td class="right">

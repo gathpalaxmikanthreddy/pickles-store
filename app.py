@@ -2486,6 +2486,11 @@ def invoice(order_id):
         if order.created_at
         else None
     )
+    payment_recorded_at_ist = (
+        order.payment_recorded_at + timedelta(hours=5, minutes=30)
+        if order.payment_recorded_at
+        else None
+    )
 
     try:
         raw_items = json.loads(order.items or "[]")
@@ -2529,6 +2534,7 @@ def invoice(order_id):
         order=order,
         items=items,
         created_at_ist=created_at_ist,
+        payment_recorded_at_ist=payment_recorded_at_ist,
     )
 
 
