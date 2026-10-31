@@ -2316,13 +2316,23 @@ def verify_razorpay_payment():
         db.session.commit()
 
         try:
-            payment_notes = payment.get("notes") or {}
-            payment_notes = (
-                dict(payment_notes)
-                if isinstance(payment_notes, dict)
-                else {}
-            )
-            payment_notes["pickels_order_id"] = str(order.id)
+            order_notes = razorpay_order.get("notes")
+            if not isinstance(order_notes, dict):
+                order_notes = {}
+
+            payment_notes = payment.get("notes")
+            if not isinstance(payment_notes, dict):
+                payment_notes = {}
+
+            merged_notes = {
+                **order_notes,
+                **payment_notes,
+                "pickels_order_id": str(order.id),
+            }
+            payment_notes = {
+                key: str(value)[:250]
+                for key, value in list(merged_notes.items())[-15:]
+            }
             razorpay_client.payment.edit(
                 razorpay_payment_id,
                 {"notes": payment_notes},
