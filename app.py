@@ -809,6 +809,14 @@ def home():
     )
 
 
+@app.route("/sw.js")
+def service_worker():
+    response = app.send_static_file("sw.js")
+    response.mimetype = "application/javascript"
+    response.headers["Service-Worker-Allowed"] = "/"
+    return response
+
+
 @app.route("/privacy-policy")
 def privacy_policy():
     return render_template("privacy_policy.html")

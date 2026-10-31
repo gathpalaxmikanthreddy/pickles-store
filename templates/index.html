@@ -16,6 +16,8 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="{{ request.url_root.rstrip('/') }}/">
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png', v='20261016-transparent') }}">
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#173d2b">
 
 <title>PICKELS STORE</title>
 
@@ -27,6 +29,15 @@
     rel="stylesheet"
     href="{{ url_for('static', filename='legal.css') }}"
 >
+<script nonce="{{ g.csp_nonce }}">
+    if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function() {
+            navigator.serviceWorker.register("/sw.js").catch(function(error) {
+                console.error("Service worker registration failed:", error);
+            });
+        });
+    }
+</script>
 
 <style nonce="{{ g.csp_nonce }}">
 
