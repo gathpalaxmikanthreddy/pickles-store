@@ -1974,6 +1974,18 @@ def create_razorpay_order():
             }
         ), 401
 
+    customer = Customer.query.filter_by(
+        mobile=session.get("user_mobile")
+    ).first()
+    if not customer:
+        session.clear()
+        return jsonify(
+            {
+                "success": False,
+                "message": "Please login again.",
+            }
+        ), 401
+
     if not RAZORPAY_KEY_ID or not RAZORPAY_KEY_SECRET:
 
         return jsonify(
@@ -1988,6 +2000,14 @@ def create_razorpay_order():
         data = request.get_json(
             silent=True
         ) or {}
+
+        requested_address = data.get("address")
+        address = (
+            requested_address.strip()
+            if isinstance(requested_address, str)
+            and requested_address.strip()
+            else customer.address or ""
+        )
 
         items = data.get(
             "items",
@@ -2008,6 +2028,7 @@ def create_razorpay_order():
 
         total = 0
         seen_product_names = set()
+        validated_product_summary = []
 
         for item in items:
 
@@ -2100,6 +2121,9 @@ def create_razorpay_order():
                 ), 400
 
             total += product.price * quantity
+            validated_product_summary.append(
+                f"{product.name} x{quantity}"
+            )
 
         amount_paise = int(
             round(
@@ -2118,7 +2142,11 @@ def create_razorpay_order():
                 "currency": "INR",
                 "receipt": receipt,
                 "notes": {
-                    "customer_mobile": session["user_mobile"],
+                    "customer_name": str(customer.name or "")[:250],
+                    "customer_mobile": str(customer.mobile or "")[:250],
+                    "delivery_address": str(address)[:250],
+                    "items": ", ".join(validated_product_summary)[:250],
+                    "order_total": f"Rs {total:.2f}"[:250],
                     "store": "PICKELS STORE",
                 },
             }
@@ -2286,6 +2314,24 @@ def verify_razorpay_payment():
         )
         db.session.add(order)
         db.session.commit()
+
+        try:
+            payment_notes = payment.get("notes") or {}
+            payment_notes = (
+                dict(payment_notes)
+                if isinstance(payment_notes, dict)
+                else {}
+            )
+            payment_notes["pickels_order_id"] = str(order.id)
+            razorpay_client.payment.edit(
+                razorpay_payment_id,
+                {"notes": payment_notes},
+            )
+        except Exception as exc:
+            app.logger.warning(
+                "Razorpay payment note update failed (%s).",
+                type(exc).__name__,
+            )
 
         send_sms(
             "+91" + mobile,
