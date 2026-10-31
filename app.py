@@ -137,7 +137,6 @@ def add_security_headers(response):
         "camera=(), microphone=(), geolocation=()",
     )
     response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin-allow-popups")
-    response.headers.setdefault("Cross-Origin-Embedder-Policy", "credentialless")
     response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
     response.headers.setdefault(
         "Content-Security-Policy",
