@@ -2415,6 +2415,68 @@ def cancel_order(order_id):
 # ORDER HISTORY
 # --------------------------------------------------
 
+@app.route("/invoice/<int:order_id>")
+def invoice(order_id):
+
+    order = Order.query.get_or_404(order_id)
+
+    if (
+        session.get("user_mobile") != order.mobile
+        and not session.get("admin_logged_in")
+    ):
+        return render_template("404.html"), 404
+
+    created_at_ist = (
+        order.created_at + timedelta(hours=5, minutes=30)
+        if order.created_at
+        else None
+    )
+
+    try:
+        raw_items = json.loads(order.items or "[]")
+    except (TypeError, ValueError):
+        raw_items = []
+
+    items = []
+    if isinstance(raw_items, list):
+        for item in raw_items:
+            if isinstance(item, dict):
+                name = item.get("name", "Unknown Product")
+                image = item.get("image", "")
+                try:
+                    price = float(item.get("price", 0))
+                except (TypeError, ValueError):
+                    price = 0
+                try:
+                    quantity = int(item.get("quantity", 1))
+                except (TypeError, ValueError):
+                    quantity = 1
+            elif isinstance(item, str):
+                name = item
+                image = ""
+                price = 0
+                quantity = 1
+            else:
+                continue
+
+            items.append(
+                {
+                    "name": name,
+                    "price": price,
+                    "quantity": quantity,
+                    "image": image,
+                    "subtotal": price * quantity,
+                }
+            )
+
+    return render_template(
+        "invoice.html",
+        order=order,
+        items=items,
+        created_at_ist=created_at_ist,
+    )
+
+
 @app.route("/order-history")
 def order_history():
 

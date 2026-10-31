@@ -910,7 +910,7 @@ async function placeCODOrder(
 
 
             window.location.href =
-                "/order-history";
+                "/invoice/" + result.order_id;
 
 
             return;
@@ -1150,7 +1150,7 @@ async function startRazorpayPayment(
 
 
                         window.location.href =
-                            "/order-history";
+                            "/invoice/" + result.order_id;
 
 
                     } catch (error) {

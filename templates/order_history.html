@@ -466,6 +466,13 @@
 
                     {% endif %}
 
+                    <a
+                        href="{{ url_for('invoice', order_id=order.id) }}"
+                        class="track-button"
+                    >
+                        🧾 View Invoice
+                    </a>
+
 
                     <!-- CANCEL BUTTON -->
 

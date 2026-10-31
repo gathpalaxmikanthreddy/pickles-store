@@ -224,13 +224,18 @@
             padding: 0;
         }
 
+        .storefront-navbar,
         .invoice {
             box-shadow: none;
-            max-width: 100%;
         }
 
+        .storefront-navbar,
         .buttons {
             display: none;
+        }
+
+        .invoice {
+            max-width: 100%;
         }
     }
 
@@ -323,7 +328,12 @@
     </p>
 
     <p>
-        <strong>Status:</strong>
+        <strong>Payment Status:</strong>
+        {{ order.payment_status or "Pending" }}
+    </p>
+
+    <p>
+        <strong>Order Status:</strong>
 
         <span class="status">
             {{ order.status }}
@@ -344,15 +354,15 @@
             </th>
 
             <th>
-                Price
+                Unit Price
             </th>
 
             <th>
-                Qty
+                Quantity
             </th>
 
             <th class="right">
-                Subtotal
+                Line Total
             </th>
 
         </tr>
@@ -421,7 +431,7 @@
         href="/"
         class="home-btn"
     >
-        🏠 Home
+        Back to home
     </a>
 
     <button
@@ -429,13 +439,18 @@
         class="print-btn"
         data-print
     >
-        🖨️ Print Invoice
+        Print / Save as PDF
     </button>
 
 </div>
 
 </div>
 
+<script nonce="{{ g.csp_nonce }}">
+    document.querySelector("[data-print]").addEventListener("click", function() {
+        window.print();
+    });
+</script>
 <script src="{{ url_for('static', filename='security-ui.js') }}"></script>
 </body>
 </html>
