@@ -28,7 +28,7 @@
     href="{{ url_for('static', filename='legal.css') }}"
 >
 
-<style>
+<style nonce="{{ g.csp_nonce }}">
 
     /* =========================
        PRODUCT SEARCH
@@ -146,7 +146,7 @@
 
 </style>
 
-<style>
+<style nonce="{{ g.csp_nonce }}">
     .storefront-home {
         --store-green: #173d2b;
         --store-gold: #c38d24;

@@ -16,7 +16,7 @@
     href="{{ url_for('static', filename='style.css') }}"
 >
 
-<style>
+<style nonce="{{ g.csp_nonce }}">
 
     .edit-product-page {
         max-width: 800px;

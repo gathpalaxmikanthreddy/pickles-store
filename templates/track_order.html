@@ -10,7 +10,7 @@
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
 
-    <style>
+    <style nonce="{{ g.csp_nonce }}">
         .tracking-card {
             max-width: 750px;
             margin: 30px auto;
@@ -99,6 +99,10 @@
             margin-top: 25px;
         }
 
+        .tracking-error {
+            color: red;
+        }
+
         .address-box {
             background: #fff8e1;
             padding: 15px;
@@ -163,7 +167,7 @@
         <p>Sign in to view orders placed with your account.</p>
 
         {% if error %}
-            <p style="color: red;">
+            <p class="tracking-error">
                 {{ error }}
             </p>
         {% endif %}

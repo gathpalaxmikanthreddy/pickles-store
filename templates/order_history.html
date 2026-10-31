@@ -14,7 +14,7 @@
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
 
-    <style>
+    <style nonce="{{ g.csp_nonce }}">
 
         .history-container {
             max-width: 900px;
@@ -148,6 +148,10 @@
 
         .empty-orders {
             text-align: center;
+        }
+
+        .cancel-order-form {
+            display: inline;
             background: white;
             padding: 40px 20px;
             border-radius: 16px;
@@ -470,7 +474,7 @@
                         <form
                             method="POST"
                             action="/cancel-order/{{ order.id }}"
-                            style="display: inline;"
+                            class="cancel-order-form"
                             data-confirm-message="Are you sure you want to cancel Order #{{ order.id }}?"
                         >
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

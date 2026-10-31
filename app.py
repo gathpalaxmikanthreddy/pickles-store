@@ -137,6 +137,8 @@ def add_security_headers(response):
         "camera=(), microphone=(), geolocation=()",
     )
     response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin-allow-popups")
+    response.headers.setdefault("Cross-Origin-Embedder-Policy", "credentialless")
+    response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
     response.headers.setdefault(
         "Content-Security-Policy",
         "default-src 'self'; "
@@ -145,7 +147,8 @@ def add_security_headers(response):
         "frame-ancestors 'none'; "
         "form-action 'self' https://api.razorpay.com https://checkout.razorpay.com; "
         f"script-src 'self' 'nonce-{g.csp_nonce}' https://checkout.razorpay.com; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        f"style-src 'self' 'nonce-{g.csp_nonce}'; "
+        "style-src-attr 'none'; "
         "img-src 'self' data: https:; "
         "font-src 'self' data: https://fonts.gstatic.com; "
         "connect-src 'self' https://api.razorpay.com https://checkout.razorpay.com; "
@@ -154,7 +157,7 @@ def add_security_headers(response):
     if app.config.get("APP_ENV") == "production":
         response.headers.setdefault(
             "Strict-Transport-Security",
-            "max-age=31536000",
+            "max-age=63072000; includeSubDomains; preload",
         )
     return response
 

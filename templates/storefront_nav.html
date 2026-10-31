@@ -55,7 +55,9 @@
                 </div>
             </details>
 
+            {% if session.get('admin_logged_in') %}
             <a class="nav-admin-link" href="{{ url_for('admin') }}">Admin</a>
+            {% endif %}
 
             <a href="{{ url_for('cart') }}" class="cart-link" aria-label="Shopping cart">
                 <span aria-hidden="true">🛒</span>

@@ -1,6 +1,7 @@
 import os
 import re
 import unittest
+from pathlib import Path
 from uuid import uuid4
 
 os.environ["APP_ENV"] = "development"
@@ -52,10 +53,18 @@ class SecurityControlsTests(unittest.TestCase):
 
         self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
         self.assertEqual(response.headers["X-Frame-Options"], "DENY")
+        self.assertEqual(response.headers["Cross-Origin-Embedder-Policy"], "credentialless")
+        self.assertEqual(response.headers["Cross-Origin-Resource-Policy"], "same-origin")
         policy = response.headers["Content-Security-Policy"]
         self.assertIn("frame-ancestors 'none'", policy)
         self.assertIn("script-src 'self' 'nonce-", policy)
         self.assertNotIn("'unsafe-inline'", policy.split("script-src", 1)[1].split(";", 1)[0])
+        style_policy = policy.split("style-src ", 1)[1].split(";", 1)[0]
+        self.assertIn("'nonce-", style_policy)
+        self.assertNotIn("'unsafe-inline'", style_policy)
+        self.assertNotIn("data:", style_policy)
+        self.assertNotIn("https:", style_policy)
+        self.assertIn("style-src-attr 'none'", policy)
         self.assertNotIn("Strict-Transport-Security", response.headers)
 
     def test_inline_scripts_use_response_csp_nonce(self):
@@ -74,6 +83,31 @@ class SecurityControlsTests(unittest.TestCase):
                 for attributes in inline_scripts
             )
         )
+        inline_styles = re.findall(rb"<style(?![^>]*\bsrc=)([^>]*)>", response.data)
+        style_nonce_match = re.search(r"style-src [^;]*'nonce-([^']+)'", policy)
+        self.assertIsNotNone(style_nonce_match)
+        self.assertTrue(inline_styles)
+        self.assertTrue(
+            all(
+                re.search(
+                    rb'nonce="' + style_nonce_match.group(1).encode("ascii") + rb'"',
+                    attributes,
+                )
+                for attributes in inline_styles
+            )
+        )
+
+    def test_external_checkout_script_has_sri(self):
+        checkout_template = (
+            Path(store.app.root_path) / "templates" / "checkout.html"
+        ).read_text(encoding="utf-8")
+
+        self.assertRegex(
+            checkout_template,
+            r'<script\s+src="https://checkout\.razorpay\.com/v1/checkout\.js"'
+            r'\s+integrity="sha384-[A-Za-z0-9+/=]+"'
+            r'\s+crossorigin="anonymous"',
+        )
 
     def test_https_deployment_gets_hsts(self):
         store.app.config["APP_ENV"] = "production"
@@ -84,7 +118,7 @@ class SecurityControlsTests(unittest.TestCase):
 
         self.assertEqual(
             response.headers["Strict-Transport-Security"],
-            "max-age=31536000",
+            "max-age=63072000; includeSubDomains; preload",
         )
 
     def test_browser_post_requires_csrf_token(self):

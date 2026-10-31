@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
 
-    <style>
+    <style nonce="{{ g.csp_nonce }}">
         * {
             box-sizing: border-box;
         }
@@ -145,6 +145,56 @@
             background-color: #f8f9fa;
             font-weight: 600;
             white-space: nowrap;
+        }
+
+        .date-filter-container {
+            margin-bottom: 24px;
+        }
+
+        .date-filter-form {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: end;
+            gap: 12px;
+        }
+
+        .date-filter-form label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .date-filter-form input[type="date"] {
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+        }
+
+        .date-filter-form .btn-update,
+        .date-filter-clear {
+            padding: 10px 16px;
+        }
+
+        .date-filter-clear {
+            display: inline-block;
+            background: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        .date-filter-error {
+            color: #b91c1c;
+            margin: 12px 0 0;
+        }
+
+        .date-filter-note {
+            color: #6c757d;
+            margin: 12px 0 0;
+        }
+
+        .orders-table .empty-state {
+            text-align: center;
         }
 
         .item-row {
@@ -380,24 +430,24 @@
     </div>
 
     <!-- SALES REPORT DATE FILTER -->
-    <div class="section-container" style="margin-bottom: 24px;">
+    <div class="section-container date-filter-container">
         <h2>📅 Sales Report Filter</h2>
-        <form method="GET" action="/admin" style="display:flex;flex-wrap:wrap;align-items:end;gap:12px;">
+        <form method="GET" action="/admin" class="date-filter-form">
             <div>
-                <label for="start_date" style="display:block;font-weight:600;margin-bottom:6px;">From date</label>
-                <input id="start_date" name="start_date" type="date" value="{{ start_date or '' }}" style="padding:10px;border:1px solid #ced4da;border-radius:6px;">
+                <label for="start_date">From date</label>
+                <input id="start_date" name="start_date" type="date" value="{{ start_date or '' }}">
             </div>
             <div>
-                <label for="end_date" style="display:block;font-weight:600;margin-bottom:6px;">To date</label>
-                <input id="end_date" name="end_date" type="date" value="{{ end_date or '' }}" style="padding:10px;border:1px solid #ced4da;border-radius:6px;">
+                <label for="end_date">To date</label>
+                <input id="end_date" name="end_date" type="date" value="{{ end_date or '' }}">
             </div>
-            <button type="submit" class="btn-update" style="padding:10px 16px;">Apply Filter</button>
-            <a href="/admin" style="display:inline-block;padding:10px 16px;background:#6c757d;color:white;text-decoration:none;border-radius:4px;">Clear</a>
+            <button type="submit" class="btn-update">Apply Filter</button>
+            <a href="/admin" class="date-filter-clear">Clear</a>
         </form>
         {% if date_filter_error %}
-            <p style="color:#b91c1c;margin:12px 0 0;">{{ date_filter_error }}</p>
+            <p class="date-filter-error">{{ date_filter_error }}</p>
         {% endif %}
-        <p style="color:#6c757d;margin:12px 0 0;">Statistics and order lists below reflect the selected date range. Leave both dates empty to view all orders.</p>
+        <p class="date-filter-note">Statistics and order lists below reflect the selected date range. Leave both dates empty to view all orders.</p>
     </div>
 
     <!-- STATISTICS -->
@@ -723,7 +773,7 @@
 
                     <td
                         colspan="10"
-                        style="text-align: center;"
+                        class="empty-state"
                     >
                         No orders found.
                     </td>
@@ -893,7 +943,7 @@
 
                     <td
                         colspan="7"
-                        style="text-align: center;"
+                        class="empty-state"
                     >
                         No cancelled orders recorded.
                     </td>
