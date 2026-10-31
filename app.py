@@ -501,6 +501,28 @@ class Order(db.Model):
         default="Pending"
     )
 
+    cancelled_by = db.Column(
+        db.String(20),
+        nullable=True
+    )
+
+    cancel_seen_by_admin = db.Column(
+        db.Boolean,
+        default=True,
+        server_default=text("TRUE")
+    )
+
+    refund_status = db.Column(
+        db.String(30),
+        default="Not Required",
+        server_default=text("'Not Required'")
+    )
+
+    razorpay_refund_id = db.Column(
+        db.String(100),
+        nullable=True
+    )
+
     payment_method = db.Column(
         db.String(30),
         default="COD"
@@ -614,6 +636,50 @@ with app.app_context():
                 text(
                     'ALTER TABLE "order" '
                     "ADD COLUMN razorpay_payment_id VARCHAR(100)"
+                )
+            )
+
+    if "cancelled_by" not in order_columns:
+
+        with db.engine.begin() as connection:
+
+            connection.execute(
+                text(
+                    'ALTER TABLE "order" '
+                    "ADD COLUMN cancelled_by VARCHAR(20)"
+                )
+            )
+
+    if "cancel_seen_by_admin" not in order_columns:
+
+        with db.engine.begin() as connection:
+
+            connection.execute(
+                text(
+                    'ALTER TABLE "order" '
+                    "ADD COLUMN cancel_seen_by_admin BOOLEAN DEFAULT TRUE"
+                )
+            )
+
+    if "refund_status" not in order_columns:
+
+        with db.engine.begin() as connection:
+
+            connection.execute(
+                text(
+                    'ALTER TABLE "order" '
+                    "ADD COLUMN refund_status VARCHAR(30) DEFAULT 'Not Required'"
+                )
+            )
+
+    if "razorpay_refund_id" not in order_columns:
+
+        with db.engine.begin() as connection:
+
+            connection.execute(
+                text(
+                    'ALTER TABLE "order" '
+                    "ADD COLUMN razorpay_refund_id VARCHAR(100)"
                 )
             )
 
@@ -2324,6 +2390,11 @@ def cancel_order(order_id):
                 product.stock += quantity
 
     order.status = "Cancelled"
+    order.cancelled_by = "customer"
+    order.cancel_seen_by_admin = False
+
+    if order.payment_method == "Online" and order.payment_status == "Paid":
+        order.refund_status = "Refund Pending"
 
     db.session.commit()
 
@@ -2758,6 +2829,112 @@ def admin():
         end_date=end_date_text,
         date_filter_error=date_filter_error,
     )
+
+
+@app.route("/admin/cancel-alerts")
+def admin_cancel_alerts():
+
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin authentication required."}), 403
+
+    orders = Order.query.filter_by(
+        cancelled_by="customer",
+        cancel_seen_by_admin=False,
+    ).order_by(Order.id.asc()).all()
+
+    return jsonify([
+        {
+            "id": order.id,
+            "name": order.name,
+            "mobile": order.mobile,
+            "total": order.total,
+            "payment_method": order.payment_method,
+            "payment_status": order.payment_status,
+            "razorpay_payment_id": order.razorpay_payment_id,
+            "refund_status": order.refund_status,
+        }
+        for order in orders
+    ])
+
+
+@app.route(
+    "/admin/cancel-alerts/<int:order_id>/seen",
+    methods=["POST"],
+)
+def mark_cancel_alert_seen(order_id):
+
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin authentication required."}), 403
+
+    order = Order.query.get(order_id)
+    if not order:
+        return jsonify({"error": "Order not found."}), 404
+
+    order.cancel_seen_by_admin = True
+    db.session.commit()
+
+    return jsonify({"success": True})
+
+
+@app.route(
+    "/admin/refund/<int:order_id>",
+    methods=["POST"],
+)
+@limiter.limit("5 per hour")
+def refund_order(order_id):
+
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin authentication required."}), 403
+
+    order = Order.query.get(order_id)
+    if not order:
+        return jsonify({"error": "Order not found."}), 404
+
+    if not (
+        order.status == "Cancelled"
+        and order.payment_method == "Online"
+        and order.payment_status == "Paid"
+        and order.refund_status == "Refund Pending"
+        and order.razorpay_payment_id
+    ):
+        message = "This order is not eligible for a refund."
+        flash(message, "error")
+        return jsonify({"success": False, "message": message}), 400
+
+    try:
+        refund_response = razorpay_client.payment.refund(
+            order.razorpay_payment_id,
+            {"amount": int(round(order.total * 100))},
+        )
+        refund_id = refund_response.get("id")
+        if not refund_id:
+            raise ValueError("Refund response did not include an ID.")
+
+        order.refund_status = "Refunded"
+        order.payment_status = "Refunded"
+        order.razorpay_refund_id = str(refund_id)
+        db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        app.logger.error(
+            "Razorpay refund failed (%s).",
+            type(exc).__name__,
+        )
+        message = "Refund failed. Please try again."
+        flash(message, "error")
+        return jsonify({"success": False, "message": message}), 502
+
+    send_sms(
+        order.mobile,
+        (
+            f"PICKELS STORE: Refund initiated for Order #{order.id}, "
+            f"Rs {order.total:.2f}. "
+            "It will reach you in 5-7 working days."
+        ),
+    )
+    flash(f"Refund initiated for Order #{order.id}.", "success")
+
+    return jsonify({"success": True})
 
 
 # --------------------------------------------------

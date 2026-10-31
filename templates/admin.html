@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <style nonce="{{ g.csp_nonce }}">
         * {
@@ -354,6 +355,64 @@
             border: 1px solid #f5c6cb;
         }
 
+        .cancel-alert-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.55);
+        }
+
+        .cancel-alert-overlay[hidden] {
+            display: none;
+        }
+
+        .cancel-alert-dialog {
+            width: min(100%, 620px);
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 24px;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        .cancel-alert-card {
+            padding: 16px 0;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .cancel-alert-card p {
+            margin: 6px 0;
+        }
+
+        .cancel-alert-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .cancel-alert-actions button {
+            padding: 8px 12px;
+            border: 0;
+            border-radius: 4px;
+            color: #fff;
+            background: #6c757d;
+            cursor: pointer;
+        }
+
+        .cancel-alert-actions .btn-refund {
+            background: #198754;
+        }
+
+        .cancel-alert-error[hidden] {
+            display: none;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -400,6 +459,16 @@
             </div>
         {% endfor %}
     {% endwith %}
+
+    <div id="cancel-alert-error" class="admin-message admin-message-error cancel-alert-error" role="alert" hidden></div>
+
+    <div id="cancel-alert-modal" class="cancel-alert-overlay" hidden>
+        <section class="cancel-alert-dialog" role="dialog" aria-modal="true" aria-labelledby="cancel-alert-title">
+            <h2 id="cancel-alert-title">Customer cancellation alerts</h2>
+            <p id="cancel-alert-message" role="status"></p>
+            <div id="cancel-alert-list"></div>
+        </section>
+    </div>
 
     <!-- ADMIN MANAGEMENT OPTIONS -->
     <div class="admin-management-panel">
@@ -522,6 +591,7 @@
                     <th>Total Price</th>
                     <th>Payment Method</th>
                     <th>Payment Status</th>
+                    <th>Refund Status</th>
                     <th>Payment Reference</th>
                     <th>Status</th>
                     <th class="action-column">Action</th>
@@ -622,6 +692,10 @@
                                 {{ order.payment_status|default('Pending', true) }}
                             </span>
                         {% endif %}
+                    </td>
+
+                    <td>
+                        {{ order.refund_status or 'Not Required' }}
                     </td>
 
                     <td class="razorpay-id">
@@ -772,7 +846,7 @@
                 <tr>
 
                     <td
-                        colspan="10"
+                        colspan="11"
                         class="empty-state"
                     >
                         No orders found.
@@ -804,6 +878,7 @@
                     <th>Total Price</th>
                     <th>Payment Method</th>
                     <th>Payment Status</th>
+                    <th>Refund Status</th>
                     <th>Status</th>
                 </tr>
 
@@ -930,6 +1005,10 @@
                     </td>
 
                     <td>
+                        {{ order.refund_status or 'Not Required' }}
+                    </td>
+
+                    <td>
                         <span class="badge badge-cancelled">
                             Cancelled
                         </span>
@@ -942,7 +1021,7 @@
                 <tr>
 
                     <td
-                        colspan="7"
+                        colspan="8"
                         class="empty-state"
                     >
                         No cancelled orders recorded.
@@ -958,6 +1037,129 @@
 
     </div>
 
+<script nonce="{{ g.csp_nonce }}">
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    const cancelAlertModal = document.getElementById("cancel-alert-modal");
+    const cancelAlertList = document.getElementById("cancel-alert-list");
+    const cancelAlertMessage = document.getElementById("cancel-alert-message");
+    const cancelAlertError = document.getElementById("cancel-alert-error");
+
+    function showCancelAlertError(message) {
+        cancelAlertError.textContent = message;
+        cancelAlertError.hidden = false;
+    }
+
+    async function postCancelAlertAction(url) {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Accept": "application/json",
+                "X-CSRFToken": csrfToken
+            }
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.message || result.error || "The action failed.");
+        }
+        return result;
+    }
+
+    function createCancelAlert(order) {
+        const card = document.createElement("article");
+        card.className = "cancel-alert-card";
+
+        const orderTitle = document.createElement("strong");
+        orderTitle.textContent = `Order #${order.id}`;
+        card.appendChild(orderTitle);
+
+        const customer = document.createElement("p");
+        customer.textContent = `Customer: ${order.name || "Guest"}`;
+        card.appendChild(customer);
+
+        const amount = document.createElement("p");
+        amount.textContent = `Amount: Rs ${Number(order.total).toFixed(2)}`;
+        card.appendChild(amount);
+
+        const paymentMethod = document.createElement("p");
+        paymentMethod.textContent = `Payment method: ${order.payment_method || "—"}`;
+        card.appendChild(paymentMethod);
+
+        if (order.refund_status === "Refund Pending") {
+            const refundStatus = document.createElement("p");
+            refundStatus.textContent = "Refund Pending";
+            card.appendChild(refundStatus);
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "cancel-alert-actions";
+
+        const seenButton = document.createElement("button");
+        seenButton.type = "button";
+        seenButton.textContent = "Mark as seen";
+        seenButton.addEventListener("click", async () => {
+            seenButton.disabled = true;
+            try {
+                await postCancelAlertAction(`/admin/cancel-alerts/${order.id}/seen`);
+                await loadCancelAlerts();
+            } catch (error) {
+                seenButton.disabled = false;
+                cancelAlertMessage.textContent = error.message;
+            }
+        });
+        actions.appendChild(seenButton);
+
+        if (order.refund_status === "Refund Pending") {
+            const refundButton = document.createElement("button");
+            refundButton.type = "button";
+            refundButton.className = "btn-refund";
+            refundButton.textContent = "Refund now";
+            refundButton.addEventListener("click", async () => {
+                if (!window.confirm(`Initiate the refund for Order #${order.id}?`)) {
+                    return;
+                }
+                refundButton.disabled = true;
+                try {
+                    await postCancelAlertAction(`/admin/refund/${order.id}`);
+                    window.location.reload();
+                } catch (error) {
+                    refundButton.disabled = false;
+                    cancelAlertMessage.textContent = error.message;
+                }
+            });
+            actions.appendChild(refundButton);
+        }
+
+        card.appendChild(actions);
+        return card;
+    }
+
+    async function loadCancelAlerts() {
+        try {
+            const response = await fetch("/admin/cancel-alerts", {
+                headers: {"Accept": "application/json"},
+                cache: "no-store"
+            });
+            const orders = await response.json();
+            if (!response.ok) {
+                throw new Error(orders.error || "Unable to load cancellation alerts.");
+            }
+
+            cancelAlertList.replaceChildren();
+            orders.forEach((order) => {
+                cancelAlertList.appendChild(createCancelAlert(order));
+            });
+            cancelAlertModal.hidden = orders.length === 0;
+            cancelAlertMessage.textContent = "";
+            cancelAlertError.hidden = true;
+        } catch (error) {
+            showCancelAlertError("Unable to load cancellation alerts. Retrying shortly.");
+            console.error("Cancellation alert request failed:", error);
+        }
+    }
+
+    loadCancelAlerts();
+    window.setInterval(loadCancelAlerts, 30000);
+</script>
 <script src="{{ url_for('static', filename='security-ui.js') }}"></script>
 </body>
 </html>
