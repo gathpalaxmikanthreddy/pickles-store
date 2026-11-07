@@ -15,7 +15,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
-from sqlalchemy import inspect, text
+from sqlalchemy import inspect, or_, text
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -132,6 +132,7 @@ def add_security_headers(response):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Cross-Origin-Embedder-Policy", "credentialless")
     response.headers.setdefault(
         "Permissions-Policy",
         "camera=(), microphone=(), geolocation=()",
@@ -522,6 +523,30 @@ class Order(db.Model):
         nullable=True
     )
 
+    stock_restored = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False,
+        server_default=text("FALSE"),
+    )
+
+    refund_completed_manually = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False,
+        server_default=text("FALSE"),
+    )
+
+    refund_completed_manually_at = db.Column(
+        db.DateTime,
+        nullable=True,
+    )
+
+    refund_completed_manually_by = db.Column(
+        db.String(100),
+        nullable=True,
+    )
+
     payment_method = db.Column(
         db.String(30),
         default="COD"
@@ -682,6 +707,52 @@ with app.app_context():
                 )
             )
 
+    if "stock_restored" not in order_columns:
+        with db.engine.begin() as connection:
+            connection.execute(
+                text(
+                    'ALTER TABLE "order" '
+                    "ADD COLUMN stock_restored BOOLEAN NOT NULL DEFAULT FALSE"
+                )
+            )
+
+    if "refund_completed_manually" not in order_columns:
+        with db.engine.begin() as connection:
+            connection.execute(
+                text(
+                    'ALTER TABLE "order" '
+                    "ADD COLUMN refund_completed_manually "
+                    "BOOLEAN NOT NULL DEFAULT FALSE"
+                )
+            )
+
+    if "refund_completed_manually_at" not in order_columns:
+        with db.engine.begin() as connection:
+            connection.execute(
+                text(
+                    'ALTER TABLE "order" '
+                    "ADD COLUMN refund_completed_manually_at TIMESTAMP"
+                )
+            )
+
+    if "refund_completed_manually_by" not in order_columns:
+        with db.engine.begin() as connection:
+            connection.execute(
+                text(
+                    'ALTER TABLE "order" '
+                    "ADD COLUMN refund_completed_manually_by VARCHAR(100)"
+                )
+            )
+
+    with db.engine.begin() as connection:
+        connection.execute(
+            text(
+                'UPDATE "order" SET stock_restored = TRUE '
+                "WHERE lower(status) = 'cancelled' "
+                "AND lower(coalesce(cancelled_by, '')) = 'customer'"
+            )
+        )
+
     customer_columns = [
         column["name"]
         for column in inspector.get_columns("customer")
@@ -711,6 +782,75 @@ with app.app_context():
                     "ADD COLUMN stock INTEGER DEFAULT 0"
                 )
             )
+
+
+def restore_order_stock_once(order):
+    restored = (
+        db.session.query(Order)
+        .filter(
+            Order.id == order.id,
+            Order.stock_restored.is_(False),
+        )
+        .update(
+            {Order.stock_restored: True},
+            synchronize_session=False,
+        )
+    )
+    if not restored:
+        return False
+
+    order.stock_restored = True
+    try:
+        raw_items = json.loads(order.items or "[]")
+    except (TypeError, ValueError):
+        app.logger.warning("Order #%s has invalid item data; stock was not restored.", order.id)
+        return True
+
+    if not isinstance(raw_items, list):
+        app.logger.warning("Order #%s item data is not a list; stock was not restored.", order.id)
+        return True
+
+    for item in raw_items:
+        if not isinstance(item, dict):
+            continue
+
+        quantity_value = item.get("quantity")
+        if isinstance(quantity_value, bool):
+            continue
+        if isinstance(quantity_value, int):
+            quantity = quantity_value
+        elif isinstance(quantity_value, str) and quantity_value.isascii() and quantity_value.isdigit():
+            quantity = int(quantity_value)
+        else:
+            continue
+        if quantity <= 0 or quantity > 100:
+            continue
+
+        product_id_value = item.get("product_id")
+        product = None
+        if isinstance(product_id_value, int) and not isinstance(product_id_value, bool):
+            if product_id_value > 0:
+                product = db.session.get(Product, product_id_value)
+        elif (
+            isinstance(product_id_value, str)
+            and product_id_value.isascii()
+            and product_id_value.isdigit()
+            and int(product_id_value) > 0
+        ):
+            product = db.session.get(Product, int(product_id_value))
+        elif not product_id_value:
+            product_name = str(item.get("name", "")).strip()
+            if product_name:
+                matches = Product.query.filter(
+                    db.func.lower(Product.name) == product_name.lower()
+                ).all()
+                if len(matches) == 1:
+                    product = matches[0]
+
+        if product:
+            product.stock += quantity
+
+    return True
 
 
 # --------------------------------------------------
@@ -1890,7 +2030,9 @@ def place_order():
 
             validated_items.append(
                 {
+                    "product_id": product.id,
                     "name": product.name,
+                    "unit": product.unit,
                     "price": product.price,
                     "quantity": quantity,
                     "image": product.image,
@@ -2267,7 +2409,9 @@ def verify_razorpay_payment():
 
             products_by_item.append((product, quantity))
             validated_items.append({
+                "product_id": product.id,
                 "name": product.name,
+                "unit": product.unit,
                 "price": product.price,
                 "quantity": quantity,
                 "image": product.image,
@@ -2388,78 +2532,49 @@ def cancel_order(order_id):
     ).first_or_404()
 
     if order.status != "Pending":
-
+        if order.status == "Cancelled":
+            flash("This order has already been cancelled.", "error")
         return redirect(
             "/order-history"
         )
 
-    try:
-
-        raw_items = json.loads(
-            order.items
-        )
-
-    except Exception:
-
-        raw_items = []
-
-    if isinstance(
-        raw_items,
-        list
+    refund_status = "Not Required"
+    if (
+            (order.payment_method or "").strip().lower() == "online"
+            and (order.payment_status or "").strip().lower() == "paid"
     ):
+        refund_status = "Refund Pending"
 
-        for item in raw_items:
+    try:
+        cancelled = (
+            db.session.query(Order)
+            .filter(
+                Order.id == order.id,
+                Order.status == "Pending",
+            )
+            .update(
+                {
+                    Order.status: "Cancelled",
+                    Order.cancelled_by: "customer",
+                    Order.cancel_seen_by_admin: False,
+                    Order.refund_status: refund_status,
+                },
+                synchronize_session=False,
+            )
+        )
+        if not cancelled:
+            db.session.rollback()
+            flash("This order is no longer available for cancellation.", "error")
+            return redirect("/order-history")
 
-            if not isinstance(
-                item,
-                dict
-            ):
-
-                continue
-
-            product_name = str(
-                item.get(
-                    "name",
-                    ""
-                )
-            ).strip()
-
-            try:
-
-                quantity = int(
-                    item.get(
-                        "quantity",
-                        1
-                    )
-                )
-
-            except (
-                TypeError,
-                ValueError
-            ):
-
-                quantity = 1
-
-            if not product_name or quantity <= 0:
-
-                continue
-
-            product = Product.query.filter_by(
-                name=product_name
-            ).first()
-
-            if product:
-
-                product.stock += quantity
-
-    order.status = "Cancelled"
-    order.cancelled_by = "customer"
-    order.cancel_seen_by_admin = False
-
-    if order.payment_method == "Online" and order.payment_status == "Paid":
-        order.refund_status = "Refund Pending"
-
-    db.session.commit()
+        db.session.expire(order)
+        restore_order_stock_once(order)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Customer order cancellation failed for Order #%s.", order.id)
+        flash("Unable to cancel this order. Please try again.", "error")
+        return redirect("/order-history")
 
     send_sms(
         "+91" + mobile,
@@ -2511,6 +2626,7 @@ def invoice(order_id):
             if isinstance(item, dict):
                 name = item.get("name", "Unknown Product")
                 image = item.get("image", "")
+                unit = item.get("unit", "")
                 try:
                     price = float(item.get("price", 0))
                 except (TypeError, ValueError):
@@ -2519,30 +2635,47 @@ def invoice(order_id):
                     quantity = int(item.get("quantity", 1))
                 except (TypeError, ValueError):
                     quantity = 1
+                try:
+                    product_id = int(item.get("product_id", 0))
+                except (TypeError, ValueError):
+                    product_id = 0
             elif isinstance(item, str):
                 name = item
                 image = ""
+                unit = ""
                 price = 0
                 quantity = 1
+                product_id = 0
             else:
                 continue
 
+            if product_id > 0:
+                product = db.session.get(Product, product_id)
+            else:
+                product_matches = Product.query.filter(
+                    db.func.lower(Product.name) == str(name).strip().lower()
+                ).all()
+                product = product_matches[0] if len(product_matches) == 1 else None
+            if product and not unit:
+                unit = product.unit or ""
             items.append(
                 {
                     "name": name,
                     "price": price,
                     "quantity": quantity,
                     "image": image,
+                    "unit": unit,
                     "subtotal": price * quantity,
                 }
             )
 
     return render_template(
-        "invoice.html",
-        order=order,
-        items=items,
-        created_at_ist=created_at_ist,
+    "invoice.html",
+    order=order,
+    items=items,
+    created_at_ist=created_at_ist,
         payment_recorded_at_ist=payment_recorded_at_ist,
+        order_placed=request.args.get("placed") == "1",
     )
 
 
@@ -2925,6 +3058,9 @@ def admin():
 
                         item["quantity"] = 1
 
+                    if not item.get("unit"):
+                        item["unit"] = product.unit
+
                 order.display_items.append(
                     item
                 )
@@ -2997,7 +3133,7 @@ def mark_cancel_alert_seen(order_id):
     if not session.get("admin_logged_in"):
         return jsonify({"error": "Admin authentication required."}), 403
 
-    order = Order.query.get(order_id)
+    order = db.session.get(Order, order_id)
     if not order:
         return jsonify({"error": "Order not found."}), 404
 
@@ -3017,55 +3153,229 @@ def refund_order(order_id):
     if not session.get("admin_logged_in"):
         return jsonify({"error": "Admin authentication required."}), 403
 
-    order = Order.query.get(order_id)
+    order = db.session.get(Order, order_id)
     if not order:
         return jsonify({"error": "Order not found."}), 404
 
+    if order.refund_status in {"Refund Processing", "Refund Review Required"}:
+        return jsonify(
+            {
+                "success": False,
+                "message": (
+                    "A refund request is already being processed or reviewed. "
+                    "Do not submit another request; reconcile the provider status first."
+                ),
+            }
+        ), 409
+
     if not (
-        order.status == "Cancelled"
-        and order.payment_method == "Online"
-        and order.payment_status == "Paid"
+        (order.status or "").strip().lower() == "cancelled"
+        and (order.payment_method or "").strip().lower() == "online"
+        and (order.payment_status or "").strip().lower() == "paid"
         and order.refund_status == "Refund Pending"
-        and order.razorpay_payment_id
     ):
         message = "This order is not eligible for a refund."
-        flash(message, "error")
         return jsonify({"success": False, "message": message}), 400
+
+    if not order.razorpay_payment_id:
+        message = (
+            "No Razorpay payment ID is available. Keep this order Refund Pending, "
+            "complete the refund manually, then record it as completed here."
+        )
+        return jsonify({"success": False, "message": message}), 400
+
+    if not RAZORPAY_KEY_ID or not RAZORPAY_KEY_SECRET:
+        message = (
+            "Razorpay is not configured. Keep this order Refund Pending, complete "
+            "the refund manually, then record it as completed here."
+        )
+        return jsonify({"success": False, "message": message}), 400
+
+    try:
+        amount_paise = int(round(float(order.total) * 100))
+    except (TypeError, ValueError, OverflowError):
+        amount_paise = 0
+    if amount_paise <= 0:
+        return jsonify(
+            {"success": False, "message": "The saved order total is invalid."}
+        ), 400
+
+    claimed = (
+        db.session.query(Order)
+        .filter(
+            Order.id == order.id,
+            Order.refund_status == "Refund Pending",
+            Order.razorpay_refund_id.is_(None),
+        )
+        .update(
+            {Order.refund_status: "Refund Processing"},
+            synchronize_session=False,
+        )
+    )
+    if not claimed:
+        db.session.rollback()
+        return jsonify(
+            {
+                "success": False,
+                "message": (
+                    "A refund request is already being processed or reviewed. "
+                    "Do not submit another request; reconcile the provider status first."
+                ),
+            }
+        ), 409
+
+    db.session.commit()
+    order.refund_status = "Refund Processing"
 
     try:
         refund_response = razorpay_client.payment.refund(
             order.razorpay_payment_id,
-            {"amount": int(round(order.total * 100))},
+            {"amount": amount_paise},
         )
+        if not isinstance(refund_response, dict):
+            raise ValueError("Refund response was invalid.")
         refund_id = refund_response.get("id")
         if not refund_id:
             raise ValueError("Refund response did not include an ID.")
 
-        order.refund_status = "Refunded"
-        order.payment_status = "Refunded"
+        provider_status = str(refund_response.get("status", "")).strip().lower()
         order.razorpay_refund_id = str(refund_id)
+        if provider_status == "processed":
+            order.refund_status = "Refunded"
+            order.payment_status = "Refunded"
+        else:
+            order.refund_status = "Refund Processing"
         db.session.commit()
     except Exception as exc:
         db.session.rollback()
+        order = db.session.get(Order, order_id)
+        if order and order.refund_status == "Refund Processing":
+            order.refund_status = "Refund Review Required"
+            db.session.commit()
         app.logger.error(
             "Razorpay refund failed (%s).",
             type(exc).__name__,
         )
-        message = "Refund failed. Please try again."
-        flash(message, "error")
+        message = (
+            "Razorpay could not confirm the refund. The order is marked for review "
+            "to prevent a duplicate request. Check Razorpay before using the manual completion action."
+        )
         return jsonify({"success": False, "message": message}), 502
+
+    if order.refund_status == "Refunded":
+        message = f"Razorpay confirmed the refund for Order #{order.id}."
+        send_sms(order.mobile, f"PICKELS STORE: {message}")
+    else:
+        message = (
+            f"Razorpay accepted the refund request for Order #{order.id}; "
+            "the refund is still processing and has not been marked complete."
+        )
+        send_sms(order.mobile, message)
+
+    return jsonify(
+        {
+            "success": True,
+            "refund_status": order.refund_status,
+            "message": message,
+        }
+    )
+
+
+@app.route(
+    "/admin/refund/<int:order_id>/manual",
+    methods=["POST"],
+)
+def record_manual_refund(order_id):
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin authentication required."}), 403
+
+    order = db.session.get(Order, order_id)
+    if not order:
+        return jsonify({"error": "Order not found."}), 404
+
+    if (
+        order.status != "Cancelled"
+        or (order.payment_method or "").strip().lower() != "online"
+        or (order.payment_status or "").strip().lower() != "paid"
+        or order.refund_status not in {
+            "Refund Pending",
+            "Refund Review Required",
+        }
+        or (
+            order.refund_status == "Refund Review Required"
+            and order.razorpay_refund_id
+        )
+    ):
+        return jsonify(
+            {
+                "success": False,
+                "message": "This order does not have an unresolved online refund.",
+            }
+        ), 400
+
+    if request.form.get("confirmation") != f"REFUNDED {order.id}":
+        return jsonify(
+            {
+                "success": False,
+                "message": (
+                    f"Explicit confirmation is required. Type REFUNDED {order.id} "
+                    "after verifying the refund was completed."
+                ),
+            }
+        ), 400
+
+    completed_at = datetime.now()
+    completed_by = os.getenv("ADMIN_USERNAME", "").strip()[:100] or "admin"
+    completed = (
+        db.session.query(Order)
+        .filter(
+            Order.id == order.id,
+            Order.status == "Cancelled",
+            db.func.lower(Order.payment_method) == "online",
+            db.func.lower(Order.payment_status) == "paid",
+            Order.refund_status.in_(
+                ["Refund Pending", "Refund Review Required"]
+            ),
+            Order.refund_completed_manually.is_(False),
+            or_(
+                Order.refund_status == "Refund Pending",
+                Order.razorpay_refund_id.is_(None),
+            ),
+        )
+        .update(
+            {
+                Order.refund_status: "Refunded",
+                Order.payment_status: "Refunded",
+                Order.refund_completed_manually: True,
+                Order.refund_completed_manually_at: completed_at,
+                Order.refund_completed_manually_by: completed_by,
+            },
+            synchronize_session=False,
+        )
+    )
+    if not completed:
+        db.session.rollback()
+        return jsonify(
+            {
+                "success": False,
+                "message": "The refund changed while being recorded. Refresh and verify its status.",
+            }
+        ), 409
+
+    db.session.commit()
+    db.session.expire(order)
 
     send_sms(
         order.mobile,
-        (
-            f"PICKELS STORE: Refund initiated for Order #{order.id}, "
-            f"Rs {order.total:.2f}. "
-            "It will reach you in 5-7 working days."
-        ),
+        f"PICKELS STORE: A manual refund for Order #{order.id} has been recorded as completed.",
     )
-    flash(f"Refund initiated for Order #{order.id}.", "success")
-
-    return jsonify({"success": True})
+    return jsonify(
+        {
+            "success": True,
+            "refund_status": order.refund_status,
+            "message": f"Manual refund completion recorded for Order #{order.id}.",
+        }
+    )
 
 
 # --------------------------------------------------
@@ -3093,7 +3403,7 @@ def update_order(order_id):
 
     status = request.form.get(
         "status",
-        "Pending"
+        "",
     )
 
     allowed_statuses = [
@@ -3105,12 +3415,55 @@ def update_order(order_id):
     ]
 
     if status not in allowed_statuses:
+        flash("Invalid order status.", "error")
+        return redirect("/admin")
 
-        status = "Pending"
+    if (order.status or "").strip().lower() == "cancelled":
+        flash(f"Order #{order.id} is already cancelled and cannot be changed.", "error")
+        return redirect("/admin")
 
-    order.status = status
+    try:
+        if status == "Cancelled":
+            if (
+                (order.payment_method or "").strip().lower() == "online"
+                and (order.payment_status or "").strip().lower() == "paid"
+            ):
+                refund_status = "Refund Pending"
+            else:
+                refund_status = "Not Required"
 
-    db.session.commit()
+            previous_status = order.status
+            cancelled = (
+                db.session.query(Order)
+                .filter(
+                    Order.id == order.id,
+                    Order.status == previous_status,
+                )
+                .update(
+                    {
+                        Order.status: "Cancelled",
+                        Order.cancelled_by: "admin",
+                        Order.cancel_seen_by_admin: True,
+                        Order.refund_status: refund_status,
+                    },
+                    synchronize_session=False,
+                )
+            )
+            if not cancelled:
+                db.session.rollback()
+                flash(f"Order #{order.id} was already updated.", "error")
+                return redirect("/admin")
+
+            db.session.expire(order)
+            restore_order_stock_once(order)
+        else:
+            order.status = status
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Admin order status update failed for Order #%s.", order.id)
+        flash("Unable to update the order. Please try again.", "error")
+        return redirect("/admin")
 
     message = (
         f"PICKELS STORE: Order #{order.id} "

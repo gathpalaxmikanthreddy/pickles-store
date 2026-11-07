@@ -409,6 +409,42 @@
             background: #198754;
         }
 
+        .order-refund-actions {
+            display: grid;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .order-refund-actions button,
+        .order-refund-actions a {
+            display: inline-block;
+            width: 100%;
+            padding: 8px 10px;
+            border: 0;
+            border-radius: 5px;
+            color: #fff;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .order-refund-actions .btn-refund {
+            background: #198754;
+        }
+
+        .order-refund-actions a {
+            background: #495057;
+        }
+
+        .order-refund-actions .btn-manual-refund {
+            background: #6c757d;
+        }
+
+        .order-refund-actions button:disabled {
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+
         .cancel-alert-error[hidden] {
             display: none;
         }
@@ -614,6 +650,8 @@
 
                     <td>
                         {{ order.name or order.mobile or 'Guest' }}
+                        <br>
+                        <small>{{ order.mobile or '—' }}</small>
                     </td>
 
                     <td>
@@ -660,6 +698,9 @@
                                         {{ item.quantity|default(1, true) }}
                                         |
                                         ₹{{ item.price|default(0, true) }}
+                                        {% if item.unit %}
+                                            | {{ item.unit }}
+                                        {% endif %}
                                     </small>
 
                                 </div>
@@ -696,6 +737,15 @@
 
                     <td>
                         {{ order.refund_status or 'Not Required' }}
+                        {% if order.refund_completed_manually %}
+                            <br><small>
+                                Manually completed by
+                                {{ order.refund_completed_manually_by or 'admin' }}
+                                {% if order.refund_completed_manually_at %}
+                                    on {{ order.refund_completed_manually_at.strftime('%d-%m-%Y %I:%M %p') }}
+                                {% endif %}
+                            </small>
+                        {% endif %}
                     </td>
 
                     <td class="razorpay-id">
@@ -746,6 +796,60 @@
 
                     <!-- ACTION -->
                     <td class="action-cell">
+
+                        <div class="order-refund-actions">
+                            <a
+                                href="{{ url_for('invoice', order_id=order.id) }}"
+                                target="_blank"
+                                rel="noopener"
+                            >
+                                View Invoice
+                            </a>
+
+                            {% if order.refund_status == 'Refund Pending' %}
+                                <form
+                                    action="/admin/refund/{{ order.id }}"
+                                    method="POST"
+                                    data-refund-form
+                                    data-order-id="{{ order.id }}"
+                                >
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn-refund">
+                                        Refund Now
+                                    </button>
+                                </form>
+                            {% elif order.refund_status in ['Refund Processing', 'Refund Review Required'] %}
+                                <button
+                                    type="button"
+                                    class="btn-refund"
+                                    disabled
+                                    title="A refund request is already in progress or requires review."
+                                >
+                                    Refund Now
+                                </button>
+                                <small>
+                                    {% if order.razorpay_refund_id %}
+                                        Razorpay refund {{ order.razorpay_refund_id }} is not confirmed complete.
+                                    {% else %}
+                                        Check Razorpay before retrying; an earlier request may have been accepted.
+                                    {% endif %}
+                                </small>
+                            {% endif %}
+
+                            {% if order.refund_status == 'Refund Pending' or (order.refund_status == 'Refund Review Required' and not order.razorpay_refund_id) %}
+                                <form
+                                    action="/admin/refund/{{ order.id }}/manual"
+                                    method="POST"
+                                    data-manual-refund-form
+                                    data-order-id="{{ order.id }}"
+                                >
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn-manual-refund">
+                                        Record manual refund completed
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
 
                         <form
                             action="/update-order/{{ order.id }}"
@@ -1049,14 +1153,70 @@
         cancelAlertError.hidden = false;
     }
 
-    async function postCancelAlertAction(url) {
-        const response = await fetch(url, {
+    async function submitRefundAction(form, endpoint, confirmMessage) {
+        if (!window.confirm(confirmMessage)) {
+            return;
+        }
+        const button = form.querySelector("button[type='submit']");
+        button.disabled = true;
+        try {
+            const result = await postCancelAlertAction(
+                endpoint,
+                form.dataset.confirmation
+            );
+            window.alert(result.message || "Refund information updated.");
+            window.location.reload();
+        } catch (error) {
+            button.disabled = false;
+            window.alert(error.message || "Unable to update refund information.");
+        }
+    }
+
+    document.addEventListener("submit", (event) => {
+        const refundForm = event.target.closest("[data-refund-form]");
+        const manualRefundForm = event.target.closest("[data-manual-refund-form]");
+        const form = refundForm || manualRefundForm;
+        if (!form) {
+            return;
+        }
+        event.preventDefault();
+        const orderId = form.dataset.orderId;
+        if (refundForm) {
+            submitRefundAction(
+                form,
+                form.action,
+                `Initiate a Razorpay refund for Order #${orderId}?`
+            );
+        } else {
+            const expectedConfirmation = `REFUNDED ${orderId}`;
+            const confirmation = window.prompt(
+                `After verifying the refund was completed, type ${expectedConfirmation} to record it.`
+            );
+            if (confirmation !== expectedConfirmation) {
+                return;
+            }
+            form.dataset.confirmation = confirmation;
+            submitRefundAction(
+                form,
+                form.action,
+                `Confirm that Order #${orderId} has already been refunded manually outside Razorpay?`,
+            );
+        }
+    });
+
+    async function postCancelAlertAction(url, confirmation) {
+        const options = {
             method: "POST",
             headers: {
                 "Accept": "application/json",
                 "X-CSRFToken": csrfToken
             }
-        });
+        };
+        if (confirmation) {
+            options.headers["Content-Type"] = "application/x-www-form-urlencoded";
+            options.body = new URLSearchParams({confirmation});
+        }
+        const response = await fetch(url, options);
         const result = await response.json();
         if (!response.ok) {
             throw new Error(result.message || result.error || "The action failed.");

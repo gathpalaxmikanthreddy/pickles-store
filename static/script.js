@@ -894,12 +894,6 @@ async function placeCODOrder(
 
         if (result.success) {
 
-            alert(
-                "Order placed successfully! Order #" +
-                result.order_id
-            );
-
-
             cart = [];
 
             localStorage.removeItem(
@@ -910,7 +904,7 @@ async function placeCODOrder(
 
 
             window.location.href =
-                "/invoice/" + result.order_id;
+                "/invoice/" + result.order_id + "?placed=1";
 
 
             return;
@@ -1134,12 +1128,6 @@ async function startRazorpayPayment(
                             );
 
 
-                        alert(
-                            "Payment successful and order placed! Order #" +
-                            result.order_id
-                        );
-
-
                         cart = [];
 
                         localStorage.removeItem(
@@ -1150,7 +1138,7 @@ async function startRazorpayPayment(
 
 
                         window.location.href =
-                            "/invoice/" + result.order_id;
+                            "/invoice/" + result.order_id + "?placed=1";
 
 
                     } catch (error) {
